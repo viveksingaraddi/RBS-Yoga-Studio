@@ -1,0 +1,492 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  LEARNER
+  INSTRUCTOR
+  ADMIN
+}
+
+enum DeliveryType {
+  PHYSICAL
+  ONLINE
+  HYBRID
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  CREATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+enum MembershipStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PAST_DUE
+}
+
+enum EnquiryStatus {
+  NEW
+  CONTACTED
+  CONVERTED
+  CLOSED
+}
+
+enum AttendanceStatus {
+  REGISTERED
+  LINK_OPENED
+  ATTENDED
+  MISSED
+}
+
+enum SessionStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  phone         String?
+  role          Role           @default(LEARNER)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  bookings      Booking[]
+  bookingHolds  BookingHold[]
+  memberships   Membership[]
+  attendances   Attendance[]
+  playbackLogs  PlaybackLog[]
+  auditLogs     AuditLog[]     @relation("UserAudits")
+
+  @@index([email])
+  @@index([role])
+}
+
+model Program {
+  id          String         @id @default(uuid())
+  title       String
+  slug        String         @unique
+  description String
+  shortDesc   String?
+  imageUrl    String
+  deliveryType DeliveryType  @default(PHYSICAL)
+  duration    String
+  price       Decimal?       @db.Decimal(10, 2)
+  isPublished Boolean        @default(true)
+  sortOrder   Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  classes     Class[]
+  recordings  Recording[]
+
+  @@index([slug])
+  @@index([isPublished])
+}
+
+model Class {
+  id          String          @id @default(uuid())
+  programId   String
+  title       String
+  description String?
+  instructor  String          @default("Master Sangu")
+  deliveryType DeliveryType   @default(PHYSICAL)
+  price       Decimal         @default(0.00) @db.Decimal(10, 2)
+  capacity    Int             @default(20)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  program     Program         @relation(fields: [programId], references: [id], onDelete: Cascade)
+  schedules   ClassSchedule[]
+
+  @@index([programId])
+}
+
+model ClassSchedule {
+  id          String        @id @default(uuid())
+  classId     String
+  startTime   DateTime
+  endTime     DateTime
+  capacity    Int           @default(20)
+  bookedCount Int           @default(0)
+  deliveryType DeliveryType @default(PHYSICAL)
+  location    String?       @default("Main Shala / RBS Studio")
+  meetingUrl  String?
+  isCancelled Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  class       Class         @relation(fields: [classId], references: [id], onDelete: Cascade)
+  bookings    Booking[]
+  holds       BookingHold[]
+  attendances Attendance[]
+
+  @@index([classId])
+  @@index([startTime])
+}
+
+model BookingHold {
+  id          String        @id @default(uuid())
+  scheduleId  String
+  userId      String
+  expiresAt   DateTime
+  createdAt   DateTime      @default(now())
+
+  schedule    ClassSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([scheduleId])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  bookingNumber String        @unique
+  userId        String
+  scheduleId    String
+  status        BookingStatus @default(PENDING)
+  amountPaid    Decimal       @default(0.00) @db.Decimal(10, 2)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedule      ClassSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  payments      Payment[]
+  attendance    Attendance?
+
+  @@index([userId])
+  @@index([scheduleId])
+  @@index([status])
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  orderId         String        @unique // Razorpay order_id
+  paymentId       String?       @unique // Razorpay payment_id
+  signature       String?
+  bookingId       String?
+  membershipId    String?
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("INR")
+  status          PaymentStatus @default(CREATED)
+  paymentMethod   String?
+  failureReason   String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  booking         Booking?      @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  membership      Membership?   @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([bookingId])
+  @@index([membershipId])
+  @@index([status])
+}
+
+model PaymentWebhookEvent {
+  id            String    @id @default(uuid())
+  eventId       String    @unique
+  eventType     String
+  payload       String    @db.Text
+  processed     Boolean   @default(false)
+  error         String?
+  createdAt     DateTime  @default(now())
+
+  @@index([eventId])
+}
+
+model MembershipPlan {
+  id                  String       @id @default(uuid())
+  name                String
+  slug                String       @unique
+  description         String
+  durationDays        Int
+  price               Decimal      @db.Decimal(10, 2)
+  includesRecordings  Boolean      @default(true)
+  includesLiveClasses Boolean      @default(true)
+  maxLivePerMonth     Int?
+  benefits            String[]     // JSON array or string array
+  isActive            Boolean      @default(true)
+  sortOrder           Int          @default(0)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  memberships         Membership[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model Membership {
+  id              String           @id @default(uuid())
+  userId          String
+  planId          String
+  status          MembershipStatus @default(PENDING_PAYMENT)
+  startDate       DateTime?
+  endDate         DateTime?
+  autoRenew       Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan            MembershipPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  payments        Payment[]
+  history         MembershipHistory[]
+
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+  @@index([endDate])
+}
+
+model MembershipHistory {
+  id            String           @id @default(uuid())
+  membershipId  String
+  fromStatus    MembershipStatus
+  toStatus      MembershipStatus
+  reason        String?
+  changedAt     DateTime         @default(now())
+
+  membership    Membership       @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@index([membershipId])
+}
+
+model Entitlement {
+  id          String   @id @default(uuid())
+  userId      String
+  featureKey  String   // "RECORDING_ACCESS", "LIVE_ACCESS", etc.
+  grantedAt   DateTime @default(now())
+  expiresAt   DateTime?
+
+  @@unique([userId, featureKey])
+  @@index([userId])
+}
+
+model LiveSession {
+  id                  String        @id @default(uuid())
+  title               String
+  description         String?
+  instructor          String        @default("Master Sangu")
+  startTime           DateTime
+  endTime             DateTime
+  durationMinutes     Int           @default(60)
+  deliveryType        DeliveryType  @default(ONLINE)
+  meetingProvider     String        @default("GOOGLE_MEET") // GOOGLE_MEET, ZOOM
+  meetingUrlEncrypted String        // Encrypted/protected URL, never exposed to public
+  requiresMembership  Boolean       @default(true)
+  status              SessionStatus @default(SCHEDULED)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  attendances         Attendance[]
+
+  @@index([startTime])
+  @@index([status])
+}
+
+model Recording {
+  id                  String        @id @default(uuid())
+  title               String
+  slug                String        @unique
+  description         String
+  category            String        @default("Asana Practice") // Hatha, Pranayama, Meditation, Vinyasa
+  instructor          String        @default("Master Sangu")
+  durationSeconds     Int           @default(1800)
+  thumbnailUrl        String
+  streamVideoId       String        // Cloudflare Stream UID or Video ID
+  streamPlaybackUrl   String?       // Fallback or provider URL
+  isPublished         Boolean       @default(true)
+  programId           String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  program             Program?      @relation(fields: [programId], references: [id], onDelete: SetNull)
+  playbackLogs        PlaybackLog[]
+  videoUpload         VideoUpload?
+
+  @@index([category])
+  @@index([isPublished])
+  @@index([slug])
+}
+
+model VideoUpload {
+  id            String    @id @default(uuid())
+  recordingId   String    @unique
+  provider      String    @default("CLOUDFLARE_STREAM")
+  uploadUrl     String?
+  directUploadId String?
+  status        String    @default("READY") // PENDING, PROCESSING, READY, ERROR
+  fileSizeBytes BigInt?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  recording     Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+}
+
+model Attendance {
+  id              String           @id @default(uuid())
+  userId          String
+  scheduleId      String?
+  liveSessionId   String?
+  bookingId       String?          @unique
+  status          AttendanceStatus @default(REGISTERED)
+  linkOpenedAt    DateTime?
+  confirmedAt     DateTime?
+  durationSeconds Int?             @default(0)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedule        ClassSchedule?   @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  liveSession     LiveSession?     @relation(fields: [liveSessionId], references: [id], onDelete: SetNull)
+  booking         Booking?         @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([scheduleId])
+  @@index([liveSessionId])
+}
+
+model PlaybackLog {
+  id              String    @id @default(uuid())
+  userId          String
+  recordingId     String
+  watchedSeconds  Int       @default(0)
+  lastPositionSec Int       @default(0)
+  isCompleted     Boolean   @default(false)
+  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime  @default(now())
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recording       Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recordingId])
+  @@index([userId])
+  @@index([recordingId])
+}
+
+model Enquiry {
+  id              String        @id @default(uuid())
+  fullName        String
+  phone           String
+  email           String?
+  interestedProgram String?
+  preferredType   DeliveryType  @default(PHYSICAL)
+  message         String
+  status          EnquiryStatus @default(NEW)
+  internalNotes   String?
+  whatsappClicked Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Notification {
+  id          String    @id @default(uuid())
+  recipient   String
+  subject     String
+  content     String
+  eventType   String    // BOOKING_CONFIRMATION, PAYMENT_RECEIVED, ENQUIRY_ALERT, etc.
+  status      String    @default("QUEUED") // QUEUED, SENT, FAILED
+  error       String?
+  createdAt   DateTime  @default(now())
+  sentAt      DateTime?
+
+  logs        EmailDeliveryLog[]
+
+  @@index([status])
+  @@index([eventType])
+}
+
+model EmailDeliveryLog {
+  id             String       @id @default(uuid())
+  notificationId String
+  provider       String       @default("RESEND")
+  responseId     String?
+  statusCode     Int?
+  errorMessage   String?
+  attemptedAt    DateTime     @default(now())
+
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String
+  targetType  String
+  targetId    String?
+  details     String?  @db.Text
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation("UserAudits", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([action])
+  @@index([targetType])
+  @@index([userId])
+}
+
+model BusinessSettings {
+  id                     String   @id @default("singleton")
+  businessName           String   @default("RBS Yoga Studio")
+  brandTagline           String   @default("The Art of Strength, Balance & Wellness")
+  instructorName         String   @default("Master Sangu")
+  instructorBiography    String   @default("Master Sangu holds an M.Sc. in Yoga with over 10 years of international teaching experience, including extensive work in Vietnam. He guides practitioners to discover authentic inner strength, conscious breathing, and profound bodily harmony.")
+  publicWhatsAppNumber   String   @default("+91 89513 46405")
+  publicContactPhone     String   @default("+91 89513 46405")
+  publicContactEmail     String   @default("contact@rbsyogastudio.com")
+  adminNotificationEmail String   @default("owner@rbsyogastudio.com")
+  businessAddress        String   @default("Studio Location - To be finalized upon studio opening")
+  timezone               String   @default("Asia/Kolkata")
+  currency               String   @default("INR")
+  instagramUrl           String?  @default("https://instagram.com/rbsyogastudio")
+  facebookUrl            String?  @default("https://facebook.com/rbsyogastudio")
+  youtubeUrl             String?  @default("https://youtube.com/@rbsyogastudio")
+  websiteUrl             String?  @default("https://rbsyogastudio.com")
+
+  // Notification toggles
+  notifyOnBooking        Boolean  @default(true)
+  notifyOnEnquiry        Boolean  @default(true)
+  notifyOnPayment        Boolean  @default(true)
+  notifyOnMembership     Boolean  @default(true)
+
+  // Backward-compatibility aliases
+  tagline                String   @default("The Art of Strength, Balance & Wellness")
+  leadInstructor         String   @default("Master Sangu")
+  instructorBio          String   @default("Master Sangu holds an M.Sc. in Yoga with over 10 years of international teaching experience, including extensive work in Vietnam. He guides practitioners to discover authentic inner strength, conscious breathing, and profound bodily harmony.")
+  contactEmail           String   @default("contact@rbsyogastudio.com")
+  contactPhone           String   @default("+91 89513 46405")
+  whatsappNumber         String   @default("+91 89513 46405")
+  address                String   @default("Studio Location - To be finalized upon studio opening")
+  updatedAt              DateTime @updatedAt
+}
