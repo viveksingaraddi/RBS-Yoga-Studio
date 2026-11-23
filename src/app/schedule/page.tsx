@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 import { getBusinessSettings } from '@/lib/settings';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -6,20 +7,25 @@ import FloatingWhatsApp from '@/components/layout/FloatingWhatsApp';
 import Link from 'next/link';
 import { Calendar as CalendarIcon, Clock, MapPin, Video, Users, ArrowRight } from 'lucide-react';
 
-export const revalidate = 30;
+export const dynamic = 'force-dynamic';
 
 export default async function SchedulePage() {
   const settings = await getBusinessSettings();
-  const schedules = await prisma.classSchedule.findMany({
-    where: {
-      isCancelled: false,
-      startTime: { gte: new Date() },
-    },
-    include: {
-      class: true,
-    },
-    orderBy: { startTime: 'asc' },
-  });
+  let schedules: Prisma.ClassScheduleGetPayload<{ include: { class: true } }>[] = [];
+  try {
+    schedules = await prisma.classSchedule.findMany({
+      where: {
+        isCancelled: false,
+        startTime: { gte: new Date() },
+      },
+      include: {
+        class: true,
+      },
+      orderBy: { startTime: 'asc' },
+    });
+  } catch (error) {
+    console.error('Error fetching schedules:', error);
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-ivory">

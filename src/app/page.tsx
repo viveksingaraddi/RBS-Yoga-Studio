@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 import { getBusinessSettings } from '@/lib/settings';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -13,36 +14,51 @@ import MembershipsSection from '@/components/home/MembershipsSection';
 import GallerySection from '@/components/home/GallerySection';
 import ContactSection from '@/components/home/ContactSection';
 
-export const revalidate = 60; // Revalidate every minute
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   // 1. Fetch dynamic business & branding settings
   const settings = await getBusinessSettings();
 
   // 2. Fetch real programs
-  const programs = await prisma.program.findMany({
-    where: { isPublished: true },
-    orderBy: { sortOrder: 'asc' },
-  });
+  let programs: Prisma.ProgramGetPayload<Record<string, never>>[] = [];
+  try {
+    programs = await prisma.program.findMany({
+      where: { isPublished: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+  } catch (error) {
+    console.error('Error fetching programs:', error);
+  }
 
   // 3. Fetch upcoming schedules
-  const schedules = await prisma.classSchedule.findMany({
-    where: {
-      isCancelled: false,
-      startTime: { gte: new Date() },
-    },
-    include: {
-      class: true,
-    },
-    orderBy: { startTime: 'asc' },
-    take: 8,
-  });
+  let schedules: Prisma.ClassScheduleGetPayload<{ include: { class: true } }>[] = [];
+  try {
+    schedules = await prisma.classSchedule.findMany({
+      where: {
+        isCancelled: false,
+        startTime: { gte: new Date() },
+      },
+      include: {
+        class: true,
+      },
+      orderBy: { startTime: 'asc' },
+      take: 8,
+    });
+  } catch (error) {
+    console.error('Error fetching schedules:', error);
+  }
 
   // 4. Fetch membership plans
-  const plans = await prisma.membershipPlan.findMany({
-    where: { isActive: true },
-    orderBy: { sortOrder: 'asc' },
-  });
+  let plans: Prisma.MembershipPlanGetPayload<Record<string, never>>[] = [];
+  try {
+    plans = await prisma.membershipPlan.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+  } catch (error) {
+    console.error('Error fetching membership plans:', error);
+  }
 
   // Serialized data for client components
   const serializedPrograms = programs.map((p) => ({

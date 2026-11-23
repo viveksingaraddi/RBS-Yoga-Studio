@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 import { getBusinessSettings } from '@/lib/settings';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -6,14 +7,19 @@ import FloatingWhatsApp from '@/components/layout/FloatingWhatsApp';
 import Link from 'next/link';
 import { Check, ArrowRight, ShieldCheck } from 'lucide-react';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export default async function MembershipsPage() {
   const settings = await getBusinessSettings();
-  const plans = await prisma.membershipPlan.findMany({
-    where: { isActive: true },
-    orderBy: { sortOrder: 'asc' },
-  });
+  let plans: Prisma.MembershipPlanGetPayload<Record<string, never>>[] = [];
+  try {
+    plans = await prisma.membershipPlan.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+  } catch (error) {
+    console.error('Error fetching membership plans:', error);
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-ivory">

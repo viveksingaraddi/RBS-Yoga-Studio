@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 import { getBusinessSettings } from '@/lib/settings';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -6,14 +7,19 @@ import FloatingWhatsApp from '@/components/layout/FloatingWhatsApp';
 import Link from 'next/link';
 import { Clock, ArrowRight, CheckCircle2, Video, MapPin, Sparkles } from 'lucide-react';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export default async function ProgramsPage() {
   const settings = await getBusinessSettings();
-  const programs = await prisma.program.findMany({
-    where: { isPublished: true },
-    orderBy: { sortOrder: 'asc' },
-  });
+  let programs: Prisma.ProgramGetPayload<Record<string, never>>[] = [];
+  try {
+    programs = await prisma.program.findMany({
+      where: { isPublished: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+  } catch (error) {
+    console.error('Error fetching programs:', error);
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-ivory">

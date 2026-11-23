@@ -104,6 +104,12 @@ npm run build
 npm run start
 ```
 
+### Vercel deployment
+
+Add `DATABASE_URL` to the Vercel project's Environment Variables (Production, Preview,
+and Development as needed), then redeploy. Configure the remaining application
+variables documented above under `.env` in the same Vercel project settings.
+
 ---
 
 ## 🔐 Seeded Test Credentials
