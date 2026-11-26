@@ -63,14 +63,20 @@ export default async function MembershipsPage() {
                 return (
                   <div
                     key={plan.id}
-                    className={`relative bg-ivory flex flex-col justify-between p-6 sm:p-8 border transition-all duration-300 ${
+                    className={`group relative bg-ivory flex flex-col justify-between p-6 sm:p-7 border transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-elevated ${
                       isFeatured
-                        ? 'border-earth shadow-elevated ring-1 ring-earth/30'
-                        : 'border-sage-dark/40 shadow-card hover:border-earth/40'
+                        ? 'border-earth ring-1 ring-earth/40 bg-ivory-pure shadow-card hover:border-earth hover:ring-earth/70'
+                        : 'border-sage-dark/50 shadow-sm hover:border-earth/60 hover:bg-ivory-pure'
                     }`}
                   >
+                    <div
+                      className={`absolute top-0 left-0 right-0 h-[3px] transition-colors duration-300 ${
+                        isFeatured ? 'bg-earth' : 'bg-transparent group-hover:bg-earth/80'
+                      }`}
+                    />
+
                     {isFeatured && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-earth text-forest text-[10px] uppercase tracking-[0.2em] font-bold px-3 py-1 shadow-sm whitespace-nowrap">
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-earth text-forest text-[10px] uppercase tracking-[0.2em] font-bold px-3 py-1 shadow-sm whitespace-nowrap z-10">
                         Recommended
                       </div>
                     )}
@@ -80,18 +86,18 @@ export default async function MembershipsPage() {
                         <span className="text-[10px] uppercase tracking-widest text-olive font-semibold block mb-1">
                           {plan.durationDays} Days Term (5 Days/Wk)
                         </span>
-                        <h3 className="font-serif text-2xl text-forest font-medium">
+                        <h3 className="font-serif text-2xl text-forest font-medium group-hover:text-forest-dark transition-colors">
                           {plan.name}
                         </h3>
-                        <p className="text-xs text-charcoal/70 mt-2 leading-relaxed">
+                        <p className="text-xs text-charcoal/70 mt-2 leading-relaxed min-h-[38px]">
                           {plan.description}
                         </p>
                       </div>
 
-                      <div className="py-3 border-y border-sage-dark/30">
-                        <span className="text-[11px] text-olive block">Investment</span>
-                        <div className="flex items-baseline space-x-1">
-                          <span className="font-serif text-3xl sm:text-4xl font-semibold text-forest">
+                      <div className="py-3 border-y border-sage-dark/30 group-hover:border-earth/30 transition-colors">
+                        <span className="text-[11px] text-olive block font-medium">Investment</span>
+                        <div className="flex items-baseline space-x-1 mt-0.5">
+                          <span className="font-serif text-3xl sm:text-4xl font-semibold text-forest tracking-tight">
                             ₹{Number(plan.price).toLocaleString('en-IN')}
                           </span>
                           <span className="text-xs text-olive">/ term</span>
@@ -116,14 +122,14 @@ export default async function MembershipsPage() {
                     <div className="pt-6">
                       <Link
                         href={`/memberships/checkout?plan=${plan.slug}`}
-                        className={`w-full py-3.5 text-xs uppercase tracking-[0.18em] font-semibold flex items-center justify-center space-x-2 transition-all ${
+                        className={`w-full py-3.5 text-xs uppercase tracking-[0.18em] font-semibold flex items-center justify-center space-x-2 transition-all duration-200 cursor-pointer ${
                           isFeatured
-                            ? 'bg-forest text-ivory hover:bg-forest-light shadow-md'
-                            : 'border border-forest text-forest hover:bg-forest hover:text-ivory'
+                            ? 'bg-forest text-ivory hover:bg-forest-light shadow-sm hover:shadow-md'
+                            : 'border border-forest text-forest hover:bg-forest hover:text-ivory group-hover:border-forest group-hover:bg-forest group-hover:text-ivory'
                         }`}
                       >
                         <span>Join Plan</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
                       </Link>
                     </div>
                   </div>
@@ -149,40 +155,48 @@ export default async function MembershipsPage() {
                 return (
                   <div
                     key={plan.id}
-                    className={`relative bg-ivory flex flex-col justify-between p-6 sm:p-8 border transition-all duration-300 ${
+                    className={`group relative bg-ivory flex flex-col justify-between p-6 sm:p-7 border transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-elevated ${
                       isFeatured
-                        ? 'border-earth shadow-elevated ring-1 ring-earth/30'
-                        : 'border-sage-dark/40 shadow-card hover:border-earth/40'
+                        ? 'border-earth ring-1 ring-earth/40 bg-ivory-pure shadow-card hover:border-earth hover:ring-earth/70'
+                        : 'border-sage-dark/50 shadow-sm hover:border-earth/60 hover:bg-ivory-pure'
                     }`}
                   >
+                    <div
+                      className={`absolute top-0 left-0 right-0 h-[3px] transition-colors duration-300 ${
+                        isFeatured ? 'bg-earth' : 'bg-transparent group-hover:bg-earth/80'
+                      }`}
+                    />
+
                     {isFeatured && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-earth text-forest text-[10px] uppercase tracking-[0.2em] font-bold px-3 py-1 shadow-sm whitespace-nowrap">
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-earth text-forest text-[10px] uppercase tracking-[0.2em] font-bold px-3 py-1 shadow-sm whitespace-nowrap z-10">
                         Popular Challenge
                       </div>
                     )}
 
                     <div className="space-y-5">
                       <div>
-                        <div className="flex items-center justify-between gap-1 mb-1">
+                        <div className="flex items-center justify-between gap-1 mb-2">
                           <span className="text-[10px] uppercase tracking-widest text-olive font-semibold block">
                             {plan.durationDays} Days Intensive
                           </span>
-                          <span className="text-[9px] uppercase tracking-wider px-2 py-0.5 bg-sage text-forest font-semibold">
+                          <span className={`text-[9px] uppercase tracking-wider px-2 py-0.5 font-semibold rounded-xs ${
+                            plan.slug.includes('morning') ? 'bg-sage text-forest' : 'bg-forest/10 text-forest'
+                          }`}>
                             {plan.slug.includes('morning') ? 'Morning' : 'Evening'}
                           </span>
                         </div>
-                        <h3 className="font-serif text-2xl text-forest font-medium">
+                        <h3 className="font-serif text-2xl text-forest font-medium group-hover:text-forest-dark transition-colors">
                           {plan.name}
                         </h3>
-                        <p className="text-xs text-charcoal/70 mt-2 leading-relaxed">
+                        <p className="text-xs text-charcoal/70 mt-2 leading-relaxed min-h-[38px]">
                           {plan.description}
                         </p>
                       </div>
 
-                      <div className="py-3 border-y border-sage-dark/30">
-                        <span className="text-[11px] text-olive block">Investment</span>
-                        <div className="flex items-baseline space-x-1">
-                          <span className="font-serif text-3xl sm:text-4xl font-semibold text-forest">
+                      <div className="py-3 border-y border-sage-dark/30 group-hover:border-earth/30 transition-colors">
+                        <span className="text-[11px] text-olive block font-medium">Investment</span>
+                        <div className="flex items-baseline space-x-1 mt-0.5">
+                          <span className="font-serif text-3xl sm:text-4xl font-semibold text-forest tracking-tight">
                             ₹{Number(plan.price).toLocaleString('en-IN')}
                           </span>
                           <span className="text-xs text-olive">/ pass</span>
@@ -207,14 +221,14 @@ export default async function MembershipsPage() {
                     <div className="pt-6">
                       <Link
                         href={`/memberships/checkout?plan=${plan.slug}`}
-                        className={`w-full py-3.5 text-xs uppercase tracking-[0.18em] font-semibold flex items-center justify-center space-x-2 transition-all ${
+                        className={`w-full py-3.5 text-xs uppercase tracking-[0.18em] font-semibold flex items-center justify-center space-x-2 transition-all duration-200 cursor-pointer ${
                           isFeatured
-                            ? 'bg-forest text-ivory hover:bg-forest-light shadow-md'
-                            : 'border border-forest text-forest hover:bg-forest hover:text-ivory'
+                            ? 'bg-forest text-ivory hover:bg-forest-light shadow-sm hover:shadow-md'
+                            : 'border border-forest text-forest hover:bg-forest hover:text-ivory group-hover:border-forest group-hover:bg-forest group-hover:text-ivory'
                         }`}
                       >
                         <span>Join Challenge</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
                       </Link>
                     </div>
                   </div>

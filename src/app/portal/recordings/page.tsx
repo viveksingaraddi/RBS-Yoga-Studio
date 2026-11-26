@@ -2,6 +2,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { Film, Play, Clock, CheckCircle2, Lock, Search } from 'lucide-react';
+import InstructorRecordingsClient from '@/components/portal/InstructorRecordingsClient';
 
 export default async function RecordingsPage({
   searchParams,
@@ -15,6 +16,40 @@ export default async function RecordingsPage({
   const categoryFilter = resolvedParams?.category;
   const searchQuery = resolvedParams?.q;
 
+  // If INSTRUCTOR or ADMIN, render management console
+  if (session.role === 'INSTRUCTOR' || session.role === 'ADMIN') {
+    const [allRecordings, plans] = await Promise.all([
+      prisma.recording.findMany({
+        include: {
+          _count: { select: { playbackLogs: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.membershipPlan.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true },
+      }),
+    ]);
+
+    const formatted = allRecordings.map((r) => ({
+      id: r.id,
+      title: r.title,
+      slug: r.slug,
+      description: r.description,
+      category: r.category,
+      instructor: r.instructor,
+      durationSeconds: r.durationSeconds,
+      thumbnailUrl: r.thumbnailUrl,
+      streamVideoId: r.streamVideoId,
+      isPublished: r.isPublished,
+      planId: r.planId,
+      createdAt: r.createdAt.toISOString(),
+      watchCount: r._count.playbackLogs,
+    }));
+
+    return <InstructorRecordingsClient initialRecordings={formatted} plans={plans} />;
+  }
+
   // Check if user has active membership
   const now = new Date();
   const membership = await prisma.membership.findFirst({
@@ -26,7 +61,7 @@ export default async function RecordingsPage({
     include: { plan: true },
   });
 
-  const hasAccess = Boolean(membership?.plan.includesRecordings || session.role === 'ADMIN');
+  const hasAccess = Boolean(membership?.plan.includesRecordings);
 
   // Fetch recordings with playback status
   const recordings = await prisma.recording.findMany({

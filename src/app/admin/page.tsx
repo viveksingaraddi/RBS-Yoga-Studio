@@ -69,6 +69,8 @@ export default async function AdminOverviewPage() {
         phone: true,
         message: true,
         status: true,
+        interestedProgram: true,
+        preferredType: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },

@@ -2,6 +2,8 @@ import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { Calendar, Video, Film, Award, Clock, ArrowRight, ShieldCheck } from 'lucide-react';
+import InstructorDashboardView from '@/components/portal/InstructorDashboardView';
+import LiveSessionJoinButton from '@/components/portal/LiveSessionJoinButton';
 
 export default async function PortalDashboardPage() {
   const session = await getCurrentUser();
@@ -9,7 +11,382 @@ export default async function PortalDashboardPage() {
 
   const now = new Date();
 
-  // Fetch all learner dashboard components concurrently in parallel with specific column selection
+  // If the logged in user is the INSTRUCTOR (or ADMIN), render the comprehensive Lead Instructor Console
+  if (session.role === 'INSTRUCTOR' || session.role === 'ADMIN') {
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const startOfTomorrow = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000);
+    const endOfTomorrow = new Date(endOfToday.getTime() + 24 * 60 * 60 * 1000);
+    const next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const in14Days = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const startOfYear = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+    const [
+      totalRegisteredStudents,
+      activeStudents,
+      activeSubscriptions,
+      todayRegistrations,
+      tomorrowRegistrations,
+      upcomingRegistrations7Days,
+      todayScheduledClasses,
+      upcomingLiveSessions,
+      monthlyEarningsAgg,
+      yearlyEarningsAgg,
+      pendingPaymentsAgg,
+      pendingPaymentsCount,
+      expiringMemberships,
+      sixMonthsPayments,
+      sixMonthsUsers,
+      subDistributionRaw,
+      planDistributionRaw,
+      teachingSchedules,
+      recentLearnersRaw,
+      recentBookingsRaw,
+      recentPaymentsRaw,
+    ] = await Promise.all([
+      // 1. Total registered students
+      prisma.user.count({ where: { role: 'LEARNER' } }),
+
+      // 2. Active students (with active pass)
+      prisma.user.count({
+        where: {
+          role: 'LEARNER',
+          isActive: true,
+          memberships: {
+            some: {
+              status: 'ACTIVE',
+              OR: [{ endDate: null }, { endDate: { gte: now } }],
+            },
+          },
+        },
+      }),
+
+      // 3. Active memberships
+      prisma.membership.count({
+        where: {
+          status: 'ACTIVE',
+          OR: [{ endDate: null }, { endDate: { gte: now } }],
+        },
+      }),
+
+      // 4. Today's bookings
+      prisma.booking.count({
+        where: {
+          status: 'CONFIRMED',
+          schedule: { startTime: { gte: startOfToday, lte: endOfToday } },
+        },
+      }),
+
+      // 5. Tomorrow's bookings
+      prisma.booking.count({
+        where: {
+          status: 'CONFIRMED',
+          schedule: { startTime: { gte: startOfTomorrow, lte: endOfTomorrow } },
+        },
+      }),
+
+      // 6. Upcoming bookings 7 days
+      prisma.booking.count({
+        where: {
+          status: 'CONFIRMED',
+          schedule: { startTime: { gte: now, lte: next7Days } },
+        },
+      }),
+
+      // 7. Today's scheduled classes
+      prisma.classSchedule.count({
+        where: {
+          isCancelled: false,
+          startTime: { gte: startOfToday, lte: endOfToday },
+        },
+      }),
+
+      // 8. Upcoming live sessions
+      prisma.liveSession.count({
+        where: {
+          status: { in: ['SCHEDULED', 'LIVE'] },
+          startTime: { gte: now },
+        },
+      }),
+
+      // 9. Monthly earnings
+      prisma.payment.aggregate({
+        _sum: { amount: true },
+        where: { status: 'CAPTURED', createdAt: { gte: startOfMonth } },
+      }),
+
+      // 10. Yearly earnings
+      prisma.payment.aggregate({
+        _sum: { amount: true },
+        where: { status: 'CAPTURED', createdAt: { gte: startOfYear } },
+      }),
+
+      // 11. Pending payments sum
+      prisma.payment.aggregate({
+        _sum: { amount: true },
+        where: { status: { in: ['CREATED', 'AUTHORIZED'] } },
+      }),
+
+      // 12. Pending payments count
+      prisma.payment.count({
+        where: { status: { in: ['CREATED', 'AUTHORIZED'] } },
+      }),
+
+      // 13. Expiring memberships (next 14 days)
+      prisma.membership.count({
+        where: {
+          status: 'ACTIVE',
+          endDate: { gte: now, lte: in14Days },
+        },
+      }),
+
+      // 14. 6-month payments for chart
+      prisma.payment.findMany({
+        where: { status: 'CAPTURED', createdAt: { gte: sixMonthsAgo } },
+        select: { amount: true, createdAt: true },
+      }),
+
+      // 15. 6-month users for chart
+      prisma.user.findMany({
+        where: { role: 'LEARNER', createdAt: { gte: sixMonthsAgo } },
+        select: { createdAt: true },
+      }),
+
+      // 16. Subscription status distribution
+      prisma.membership.groupBy({
+        by: ['status'],
+        _count: { id: true },
+      }),
+
+      // 17. Plan-wise distribution
+      prisma.membershipPlan.findMany({
+        select: {
+          name: true,
+          _count: {
+            select: {
+              memberships: { where: { status: 'ACTIVE' } },
+            },
+          },
+        },
+      }),
+
+      // 18. Teaching schedules
+      prisma.classSchedule.findMany({
+        where: {
+          isCancelled: false,
+          startTime: { gte: startOfToday },
+        },
+        include: {
+          class: {
+            select: {
+              title: true,
+              instructor: true,
+            },
+          },
+          bookings: {
+            where: { status: 'CONFIRMED' },
+            include: {
+              user: {
+                select: {
+                  name: true,
+                  email: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { startTime: 'asc' },
+        take: 6,
+      }),
+
+      // 19. Recent learners
+      prisma.user.findMany({
+        where: { role: 'LEARNER' },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          isActive: true,
+          createdAt: true,
+          memberships: {
+            where: { status: 'ACTIVE' },
+            select: { plan: { select: { name: true } } },
+            take: 1,
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 6,
+      }),
+
+      // 20. Recent bookings
+      prisma.booking.findMany({
+        take: 4,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { name: true } },
+          schedule: { include: { class: { select: { title: true } } } },
+        },
+      }),
+
+      // 21. Recent payments
+      prisma.payment.findMany({
+        take: 4,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          membership: {
+            include: {
+              user: { select: { name: true } },
+              plan: { select: { name: true } },
+            },
+          },
+          booking: {
+            include: {
+              user: { select: { name: true } },
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Format 6-month charts
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyRevenueChart: { label: string; value: number }[] = [];
+    const studentRegistrationsChart: { label: string; value: number }[] = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mIdx = d.getMonth();
+      const yr = d.getFullYear();
+      const label = monthNames[mIdx];
+
+      const rev = sixMonthsPayments
+        .filter((p) => {
+          const pDate = new Date(p.createdAt);
+          return pDate.getMonth() === mIdx && pDate.getFullYear() === yr;
+        })
+        .reduce((sum, p) => sum + Number(p.amount), 0);
+
+      const reg = sixMonthsUsers.filter((u) => {
+        const uDate = new Date(u.createdAt);
+        return uDate.getMonth() === mIdx && uDate.getFullYear() === yr;
+      }).length;
+
+      monthlyRevenueChart.push({ label, value: Math.round(rev) });
+      studentRegistrationsChart.push({ label, value: reg });
+    }
+
+    // Format Subscription distribution
+    const subDistMap: Record<string, number> = {
+      ACTIVE: 0,
+      PENDING_PAYMENT: 0,
+      EXPIRED: 0,
+      CANCELLED: 0,
+    };
+    subDistributionRaw.forEach((s) => {
+      subDistMap[s.status] = s._count.id;
+    });
+    const subscriptionDistribution = Object.entries(subDistMap).map(([label, value]) => ({
+      label,
+      value,
+    }));
+
+    // Format Plan-wise distribution
+    const planDistribution = planDistributionRaw.map((p) => ({
+      label: p.name,
+      value: p._count.memberships,
+    }));
+
+    // Format Recent Activity feed
+    const recentActivity: {
+      id: string;
+      type: 'BOOKING' | 'PAYMENT' | 'STUDENT' | 'MEMBERSHIP' | 'SESSION';
+      title: string;
+      subtitle: string;
+      timestamp: Date;
+      statusBadge?: string;
+    }[] = [];
+
+    recentPaymentsRaw.forEach((p) => {
+      const payerName = p.membership?.user.name || p.booking?.user.name || 'Student';
+      recentActivity.push({
+        id: `pay-${p.id}`,
+        type: 'PAYMENT',
+        title: `Payment: ₹${Number(p.amount).toLocaleString('en-IN')}`,
+        subtitle: `Received from ${payerName} (${p.status})`,
+        timestamp: p.createdAt,
+        statusBadge: p.status,
+      });
+    });
+
+    recentBookingsRaw.forEach((b) => {
+      recentActivity.push({
+        id: `book-${b.id}`,
+        type: 'BOOKING',
+        title: `Booking: ${b.schedule.class.title}`,
+        subtitle: `Reserved by ${b.user.name} (#${b.bookingNumber})`,
+        timestamp: b.createdAt,
+        statusBadge: b.status,
+      });
+    });
+
+    recentLearnersRaw.slice(0, 3).forEach((u) => {
+      recentActivity.push({
+        id: `user-${u.id}`,
+        type: 'STUDENT',
+        title: `New Student Registration`,
+        subtitle: `${u.name} joined the studio sanctuary`,
+        timestamp: u.createdAt,
+        statusBadge: 'NEW',
+      });
+    });
+
+    // Sort by timestamp descending
+    recentActivity.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    const formattedLearners = recentLearnersRaw.map((learner) => ({
+      id: learner.id,
+      name: learner.name,
+      email: learner.email,
+      phone: learner.phone,
+      isActive: learner.isActive,
+      createdAt: learner.createdAt,
+      membershipName: learner.memberships[0]?.plan.name,
+    }));
+
+    return (
+      <InstructorDashboardView
+        instructorName={session.name}
+        stats={{
+          totalRegisteredStudents,
+          activeStudents,
+          activeSubscriptions,
+          todayRegistrations,
+          tomorrowRegistrations,
+          upcomingRegistrations7Days,
+          todayScheduledClasses,
+          upcomingLiveSessions,
+          monthlyEarnings: Number(monthlyEarningsAgg._sum.amount || 0),
+          yearlyEarnings: Number(yearlyEarningsAgg._sum.amount || 0),
+          pendingPaymentsCount,
+          pendingPaymentsAmount: Number(pendingPaymentsAgg._sum.amount || 0),
+          expiringMemberships,
+        }}
+        monthlyRevenueChart={monthlyRevenueChart}
+        studentRegistrationsChart={studentRegistrationsChart}
+        subscriptionDistribution={subscriptionDistribution}
+        planDistribution={planDistribution}
+        teachingSchedules={teachingSchedules}
+        recentLearners={formattedLearners}
+        recentActivity={recentActivity.slice(0, 6)}
+      />
+    );
+  }
+
+  // Learner Dashboard View: fetch learner data
   const [membership, upcomingBookings, recordings, liveSessions] = await Promise.all([
     // 1. Fetch active membership
     prisma.membership.findFirst({
@@ -67,6 +444,7 @@ export default async function PortalDashboardPage() {
       where: { isPublished: true },
       select: {
         id: true,
+        slug: true,
         title: true,
         durationSeconds: true,
         category: true,
@@ -86,7 +464,7 @@ export default async function PortalDashboardPage() {
         id: true,
         title: true,
         startTime: true,
-        streamUrl: true,
+        meetingUrlEncrypted: true,
       },
       orderBy: { startTime: 'asc' },
       take: 2,
@@ -184,6 +562,10 @@ export default async function PortalDashboardPage() {
                 })}{' '}
                 IST
               </p>
+              <LiveSessionJoinButton
+                sessionId={liveSessions[0].id}
+                sessionTitle={liveSessions[0].title}
+              />
             </div>
           ) : (
             <p className="text-xs text-charcoal/60">No Live Broadcast Today</p>

@@ -3,9 +3,16 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Check, ShieldCheck, Lock, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import Script from 'next/script';
+import { Check, ShieldCheck, Lock, ArrowRight, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 function MembershipCheckoutContent() {
   const searchParams = useSearchParams();
@@ -84,36 +91,84 @@ function MembershipCheckoutContent() {
 
       const { membershipId, order, plan } = data;
 
-      // Step B: Simulate Razorpay signature verification
-      const mockPaymentId = `pay_mbr_${Date.now()}`;
-      const mockSignature = 'test_verified';
-
-      // Step C: Confirm on server
-      const confirmRes = await fetch('/api/memberships/confirm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          membershipId,
-          orderId: order.orderId,
-          paymentId: mockPaymentId,
-          signature: mockSignature,
-        }),
-      });
-
-      const confirmData = await confirmRes.json();
-      if (confirmRes.ok && confirmData.success) {
-        setConfirmedMembership({
-          planName: plan.name,
-          durationDays: plan.durationDays,
-          amount: plan.price,
-          endDate: confirmData.endDate,
+      // Function to confirm payment on server
+      const confirmPaymentOnServer = async (paymentId: string, signature: string) => {
+        const confirmRes = await fetch('/api/memberships/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            membershipId,
+            orderId: order.orderId,
+            paymentId,
+            signature,
+          }),
         });
+
+        const confirmData = await confirmRes.json();
+        if (confirmRes.ok && confirmData.success) {
+          setConfirmedMembership({
+            planName: plan.name,
+            durationDays: plan.durationDays,
+            amount: plan.price,
+            endDate: confirmData.endDate,
+          });
+        } else {
+          throw new Error(confirmData.message || 'Activation failed');
+        }
+      };
+
+      // Check if Razorpay Checkout SDK is loaded
+      if (typeof window !== 'undefined' && window.Razorpay) {
+        const options = {
+          key: order.keyId,
+          amount: order.amount,
+          currency: order.currency || 'INR',
+          name: 'RBS Yoga Studio',
+          description: `Membership: ${plan.name}`,
+          image: '/favicon.ico',
+          order_id: order.orderId.startsWith('order_') && !order.orderId.includes('MBR-') ? order.orderId : undefined,
+          prefill: {
+            name: userSession?.name || '',
+            email: userSession?.email || '',
+          },
+          theme: {
+            color: '#173F34',
+          },
+          handler: async function (response: any) {
+            try {
+              setLoading(true);
+              await confirmPaymentOnServer(
+                response.razorpay_payment_id || `pay_rzp_${Date.now()}`,
+                response.razorpay_signature || 'test_verified'
+              );
+            } catch (err: any) {
+              setErrorMsg(err.message || 'Failed to confirm Razorpay payment');
+            } finally {
+              setLoading(false);
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              setLoading(false);
+            },
+          },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (resp: any) {
+          setErrorMsg(resp?.error?.description || 'Payment failed or was declined');
+          setLoading(false);
+        });
+
+        rzp.open();
       } else {
-        throw new Error(confirmData.message || 'Activation failed');
+        // Fallback simulation in test mode if external SDK CDN is unreachable
+        const mockPaymentId = `pay_mbr_${Date.now()}`;
+        const mockSignature = 'test_verified';
+        await confirmPaymentOnServer(mockPaymentId, mockSignature);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Payment processing error');
-    } finally {
       setLoading(false);
     }
   };
@@ -312,6 +367,10 @@ function MembershipCheckoutContent() {
 export default function MembershipCheckoutPage() {
   return (
     <div className="min-h-screen flex flex-col bg-ivory">
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        strategy="lazyOnload"
+      />
       <Navbar />
       <Suspense fallback={<div className="pt-32 text-center text-sm">Loading checkout...</div>}>
         <MembershipCheckoutContent />

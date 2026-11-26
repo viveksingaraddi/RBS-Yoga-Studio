@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Lock, Mail, ArrowRight, AlertCircle, Sparkles } from 'lucide-react';
+import { Lock, Mail, ArrowRight, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 
@@ -124,10 +124,23 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-forest text-ivory py-4 text-xs uppercase tracking-[0.2em] font-semibold hover:bg-forest-light transition-all flex items-center justify-center space-x-2 shadow-card"
+              className={`w-full py-4 text-xs uppercase tracking-[0.2em] font-semibold transition-all flex items-center justify-center space-x-2 shadow-card cursor-pointer ${
+                loading
+                  ? 'bg-forest/80 text-ivory/90 cursor-wait'
+                  : 'bg-forest text-ivory hover:bg-forest-light'
+              }`}
             >
-              <span>{loading ? 'Authenticating...' : 'Sign In to Portal'}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-earth" />
+                  <span>Authenticating Credentials...</span>
+                </>
+              ) : (
+                <>
+                  <span>Sign In to Portal</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </>
+              )}
             </button>
           </form>
 

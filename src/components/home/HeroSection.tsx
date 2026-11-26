@@ -144,15 +144,15 @@ export default function HeroSection({
           <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-5">
             <Link
               href="/schedule"
-              className="hero-cta-btn inline-flex items-center justify-center space-x-3 bg-forest text-ivory px-8 py-4 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-forest-light transition-all shadow-card group"
+              className="inline-flex items-center justify-center space-x-3 bg-forest text-ivory px-8 py-4 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-forest-light hover:shadow-elevated transition-all duration-300 shadow-card group"
             >
               <span>Begin Your Journey</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform duration-300" />
             </Link>
 
             <Link
               href="/#programs"
-              className="hero-cta-btn inline-flex items-center justify-center space-x-2 border border-forest/30 text-forest px-8 py-4 text-xs uppercase tracking-[0.18em] font-semibold hover:bg-sage/40 transition-colors"
+              className="inline-flex items-center justify-center space-x-2 bg-ivory/80 backdrop-blur-xs border-2 border-forest text-forest px-8 py-4 text-xs uppercase tracking-[0.18em] font-bold hover:bg-forest hover:text-ivory hover:shadow-card transition-all duration-300"
             >
               <span>Explore Programs</span>
             </Link>

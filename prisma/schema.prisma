@@ -80,6 +80,8 @@ model User {
   attendances   Attendance[]
   playbackLogs  PlaybackLog[]
   auditLogs     AuditLog[]     @relation("UserAudits")
+  activationTokens AccountActivationToken[]
+  resetTokens      PasswordResetToken[]
 
   @@index([email])
   @@index([role])
@@ -196,6 +198,9 @@ model Payment {
   status          PaymentStatus @default(CREATED)
   paymentMethod   String?
   failureReason   String?
+  notes           String?
+  receiptNumber   String?
+  recordedBy      String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -250,6 +255,8 @@ model Membership {
   startDate       DateTime?
   endDate         DateTime?
   autoRenew       Boolean          @default(false)
+  notes           String?
+  createdBy       String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -298,7 +305,9 @@ model LiveSession {
   durationMinutes     Int           @default(60)
   deliveryType        DeliveryType  @default(ONLINE)
   meetingProvider     String        @default("GOOGLE_MEET") // GOOGLE_MEET, ZOOM
+  meetingUrl          String?
   meetingUrlEncrypted String        // Encrypted/protected URL, never exposed to public
+  classScheduleId     String?
   requiresMembership  Boolean       @default(true)
   status              SessionStatus @default(SCHEDULED)
   createdAt           DateTime      @default(now())
@@ -323,6 +332,7 @@ model Recording {
   streamPlaybackUrl   String?       // Fallback or provider URL
   isPublished         Boolean       @default(true)
   programId           String?
+  planId              String?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
@@ -489,4 +499,53 @@ model BusinessSettings {
   whatsappNumber         String   @default("+91 89513 46405")
   address                String   @default("Studio Location - To be finalized upon studio opening")
   updatedAt              DateTime @updatedAt
+}
+
+model AccountActivationToken {
+  id         String    @id @default(uuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id         String    @id @default(uuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId])
+}
+
+model NotificationJob {
+  id             String    @id @default(uuid())
+  recipient      String
+  subject        String
+  content        String    @db.Text
+  eventType      String
+  payload        String?   @db.Text
+  idempotencyKey String?   @unique
+  scheduledFor   DateTime  @default(now())
+  status         String    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED, CANCELLED
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(3)
+  lastError      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  processedAt    DateTime?
+
+  @@index([status, scheduledFor])
+  @@index([idempotencyKey])
 }

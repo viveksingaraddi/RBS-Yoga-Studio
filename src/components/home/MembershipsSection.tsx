@@ -1,14 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { Check, ArrowRight, Zap, Calendar, Sparkles } from 'lucide-react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 interface PlanItem {
   id: string;
@@ -36,43 +30,11 @@ export default function MembershipsSection({
 
   const displayedPlans = activeTab === 'MEMBERSHIP' ? regularPlans : challengePlans;
 
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion || !sectionRef.current) return;
-
-    const ctx = gsap.context(() => {
-      gsap.from('.memberships-header', {
-        opacity: 0,
-        y: 25,
-        duration: 0.8,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top 85%',
-        },
-      });
-
-      gsap.from('.membership-plan-card', {
-        opacity: 0,
-        y: 35,
-        duration: 0.75,
-        stagger: 0.1,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top 75%',
-        },
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [activeTab]);
-
   return (
-    <section ref={sectionRef} id="memberships" className="py-14 sm:py-20 bg-sage-light border-t border-sage-dark/30 overflow-hidden">
+    <section ref={sectionRef} id="memberships" className="py-14 sm:py-20 bg-sage-light border-t border-sage-dark/30">
       <div className="max-w-7xl mx-auto px-6 sm:px-8">
         {/* Section Header */}
-        <div className="memberships-header text-center max-w-3xl mx-auto space-y-3 mb-8 sm:mb-10">
+        <div className="text-center max-w-3xl mx-auto space-y-3 mb-10 sm:mb-12">
           <span className="text-xs uppercase tracking-[0.25em] text-earth font-semibold">
             Commitment to Growth
           </span>
@@ -86,13 +48,13 @@ export default function MembershipsSection({
           </p>
 
           {/* Tab Selector */}
-          <div className="inline-flex items-center p-1.5 bg-ivory border border-sage-dark/50 shadow-sm mt-4">
+          <div className="inline-flex items-center p-1.5 bg-ivory border border-sage-dark/60 rounded-sm shadow-sm mt-4">
             <button
               onClick={() => setActiveTab('MEMBERSHIP')}
-              className={`flex items-center space-x-2 px-6 py-2.5 text-xs uppercase tracking-widest font-semibold transition-all ${
+              className={`flex items-center space-x-2 px-5 sm:px-6 py-2.5 text-xs uppercase tracking-widest font-semibold transition-all duration-200 cursor-pointer ${
                 activeTab === 'MEMBERSHIP'
                   ? 'bg-forest text-ivory shadow-sm'
-                  : 'text-charcoal/70 hover:text-forest'
+                  : 'text-charcoal/70 hover:text-forest hover:bg-sage/40'
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
@@ -100,10 +62,10 @@ export default function MembershipsSection({
             </button>
             <button
               onClick={() => setActiveTab('CHALLENGE')}
-              className={`flex items-center space-x-2 px-6 py-2.5 text-xs uppercase tracking-widest font-semibold transition-all ${
+              className={`flex items-center space-x-2 px-5 sm:px-6 py-2.5 text-xs uppercase tracking-widest font-semibold transition-all duration-200 cursor-pointer ${
                 activeTab === 'CHALLENGE'
                   ? 'bg-earth text-forest shadow-sm'
-                  : 'text-charcoal/70 hover:text-forest'
+                  : 'text-charcoal/70 hover:text-forest hover:bg-sage/40'
               }`}
             >
               <Zap className="w-3.5 h-3.5" />
@@ -113,54 +75,62 @@ export default function MembershipsSection({
         </div>
 
         {/* Membership Cards Grid */}
-        <div className={`memberships-grid grid grid-cols-1 ${activeTab === 'MEMBERSHIP' ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-4'} gap-6 items-stretch`}>
-          {displayedPlans.map((plan, idx) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+          {displayedPlans.map((plan) => {
             const isFeatured = plan.slug === '4-month-membership' || plan.slug === '90-day-challenge-morning';
 
             return (
               <div
                 key={plan.id}
-                className={`membership-plan-card relative bg-ivory flex flex-col justify-between p-6 sm:p-8 border transition-all duration-300 ${
+                className={`group relative bg-ivory flex flex-col justify-between p-6 sm:p-7 border transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-elevated ${
                   isFeatured
-                    ? 'border-earth shadow-elevated ring-1 ring-earth/40 bg-ivory-pure'
-                    : 'border-sage-dark/40 shadow-card hover:border-earth/40'
+                    ? 'border-earth ring-1 ring-earth/40 bg-ivory-pure shadow-card hover:border-earth hover:ring-earth/70'
+                    : 'border-sage-dark/50 shadow-sm hover:border-earth/60 hover:bg-ivory-pure'
                 }`}
               >
+                {/* Accent top line on hover */}
+                <div
+                  className={`absolute top-0 left-0 right-0 h-[3px] transition-colors duration-300 ${
+                    isFeatured ? 'bg-earth' : 'bg-transparent group-hover:bg-earth/80'
+                  }`}
+                />
+
                 {isFeatured && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-earth text-forest text-[9px] uppercase tracking-[0.2em] font-bold px-3 py-1 shadow-sm whitespace-nowrap">
-                    Best Value Sadhana
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-earth text-forest text-[9px] uppercase tracking-[0.2em] font-bold px-3 py-1 shadow-sm whitespace-nowrap z-10 flex items-center space-x-1">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    <span>Best Value Sadhana</span>
                   </div>
                 )}
 
                 <div className="space-y-5">
                   <div>
-                    <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center justify-between gap-2 mb-2">
                       <span className="text-[10px] uppercase tracking-widest text-olive font-semibold block">
                         {plan.durationDays} Days Sadhana
                       </span>
                       {plan.slug.includes('morning') && (
-                        <span className="text-[9px] uppercase tracking-wider px-2 py-0.5 bg-sage text-forest font-semibold">
+                        <span className="text-[9px] uppercase tracking-wider px-2 py-0.5 bg-sage text-forest font-semibold rounded-xs">
                           Morning Batch
                         </span>
                       )}
                       {plan.slug.includes('evening') && (
-                        <span className="text-[9px] uppercase tracking-wider px-2 py-0.5 bg-forest/10 text-forest font-semibold">
+                        <span className="text-[9px] uppercase tracking-wider px-2 py-0.5 bg-forest/10 text-forest font-semibold rounded-xs">
                           Evening Batch
                         </span>
                       )}
                     </div>
-                    <h3 className="font-serif text-2xl text-forest font-medium leading-snug">
+                    <h3 className="font-serif text-2xl text-forest font-medium leading-snug group-hover:text-forest-dark transition-colors">
                       {plan.name}
                     </h3>
-                    <p className="text-xs text-charcoal/70 mt-2 leading-relaxed">
+                    <p className="text-xs text-charcoal/70 mt-2 leading-relaxed min-h-[38px]">
                       {plan.description}
                     </p>
                   </div>
 
-                  <div className="py-3 border-y border-sage-dark/30">
-                    <span className="text-[11px] text-olive block">Investment</span>
-                    <div className="flex items-baseline space-x-1">
-                      <span className="font-serif text-3xl sm:text-4xl font-semibold text-forest">
+                  <div className="py-3 border-y border-sage-dark/30 group-hover:border-earth/30 transition-colors">
+                    <span className="text-[11px] text-olive block font-medium">Investment</span>
+                    <div className="flex items-baseline space-x-1 mt-0.5">
+                      <span className="font-serif text-3xl sm:text-4xl font-semibold text-forest tracking-tight">
                         ₹{Number(plan.price).toLocaleString('en-IN')}
                       </span>
                       <span className="text-xs text-olive">/ pass</span>
@@ -186,14 +156,14 @@ export default function MembershipsSection({
                 <div className="pt-6">
                   <Link
                     href={`/memberships/checkout?plan=${plan.slug}`}
-                    className={`w-full py-3.5 text-xs uppercase tracking-[0.18em] font-semibold flex items-center justify-center space-x-2 transition-all ${
+                    className={`w-full py-3.5 text-xs uppercase tracking-[0.18em] font-semibold flex items-center justify-center space-x-2 transition-all duration-200 cursor-pointer ${
                       isFeatured
-                        ? 'bg-forest text-ivory hover:bg-forest-light shadow-md'
-                        : 'border border-forest text-forest hover:bg-forest hover:text-ivory'
+                        ? 'bg-forest text-ivory hover:bg-forest-light shadow-sm hover:shadow-md'
+                        : 'border border-forest text-forest hover:bg-forest hover:text-ivory group-hover:border-forest group-hover:bg-forest group-hover:text-ivory'
                     }`}
                   >
                     <span>Enroll Now</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
                   </Link>
                 </div>
               </div>

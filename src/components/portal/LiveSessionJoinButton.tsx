@@ -1,54 +1,65 @@
 'use client';
 
 import { useState } from 'react';
-import { Video, Lock, ExternalLink, AlertCircle } from 'lucide-react';
+import { Video, Loader2, ExternalLink } from 'lucide-react';
 
-export default function LiveSessionJoinButton({ sessionId }: { sessionId: string }) {
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+interface LiveSessionJoinButtonProps {
+  sessionId: string;
+  sessionTitle?: string;
+}
+
+export default function LiveSessionJoinButton({
+  sessionId,
+  sessionTitle,
+}: LiveSessionJoinButtonProps) {
+  const [joining, setJoining] = useState(false);
+  const [error, setError] = useState('');
 
   const handleJoin = async () => {
-    setLoading(true);
-    setErrorMsg('');
+    setJoining(true);
+    setError('');
 
     try {
-      // Call protected server-side endpoint that checks authentication & active membership
       const res = await fetch(`/api/live-sessions/${sessionId}/join`, {
         method: 'POST',
       });
 
       const data = await res.json();
-
       if (res.ok && data.success && data.meetingUrl) {
-        // Open protected meeting URL in a secure window
         window.open(data.meetingUrl, '_blank', 'noopener,noreferrer');
       } else {
-        setErrorMsg(data.message || 'Access denied. Active membership required to enter live sessions.');
+        setError(data.message || 'Unable to join live session. Verify your membership pass.');
       }
     } catch {
-      setErrorMsg('Failed to authorize live session. Please verify your internet connection.');
+      setError('Network connection error while joining live transmission.');
     } finally {
-      setLoading(false);
+      setJoining(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-end space-y-2">
-      {errorMsg && (
-        <div className="p-2 bg-red-50 text-red-800 text-[11px] border border-red-200 max-w-xs text-right">
-          {errorMsg}
-        </div>
-      )}
-
+    <div className="pt-2">
       <button
+        type="button"
         onClick={handleJoin}
-        disabled={loading}
-        className="bg-forest text-ivory px-6 py-3 text-xs uppercase tracking-widest font-semibold hover:bg-forest-light transition-all flex items-center space-x-2 shadow-sm"
+        disabled={joining}
+        className="w-full bg-forest text-ivory py-2 px-3 text-xs uppercase tracking-wider font-semibold hover:bg-forest-light transition-all flex items-center justify-center space-x-1.5 shadow-sm"
       >
-        <Video className="w-3.5 h-3.5" />
-        <span>{loading ? 'Authorizing Access...' : 'Join Live Stream'}</span>
-        <ExternalLink className="w-3 h-3" />
+        {joining ? (
+          <>
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span>Connecting...</span>
+          </>
+        ) : (
+          <>
+            <Video className="w-3.5 h-3.5 text-earth" />
+            <span>Join Live Broadcast</span>
+            <ExternalLink className="w-3 h-3 ml-1 opacity-70" />
+          </>
+        )}
       </button>
+
+      {error && <p className="text-[11px] text-red-600 mt-1">{error}</p>}
     </div>
   );
 }

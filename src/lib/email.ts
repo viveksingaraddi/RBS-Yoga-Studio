@@ -279,3 +279,284 @@ export async function sendEmailNotification({
 
   return { success: true, id: notification.id, provider: 'DEV_LOGGER' };
 }
+
+/**
+ * A. New Student Account Activation Email
+ */
+export async function sendStudentActivationEmail({
+  to,
+  name,
+  activationUrl,
+}: {
+  to: string;
+  name: string;
+  activationUrl: string;
+}) {
+  const subject = `[RBS Yoga Studio] Activate Your Yoga Practitioner Account`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #F8F6F0; border: 1px solid #E9EDE5; padding: 32px; color: #1E3029;">
+      <div style="text-align: center; border-bottom: 1px solid #E9EDE5; padding-bottom: 20px; margin-bottom: 24px;">
+        <span style="font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; color: #B69B73; font-weight: 600;">The Art of Strength, Balance &amp; Wellness</span>
+        <h1 style="font-family: Georgia, serif; font-size: 26px; color: #173F34; margin: 6px 0 0 0;">RBS Yoga Studio</h1>
+      </div>
+      <p style="font-size: 16px;">Namaste <strong>${name}</strong>,</p>
+      <p style="font-size: 14px; line-height: 1.6;">You have been enrolled as a student practitioner at RBS Yoga Studio under the mentorship of <strong>Master Sangu (M.Sc. Yoga)</strong>.</p>
+      <p style="font-size: 14px; line-height: 1.6;">To complete your enrollment and access your classes, recordings, and interactive livestreams, please activate your account and choose your secure password below:</p>
+      <div style="text-align: center; margin: 28px 0;">
+        <a href="${activationUrl}" style="background-color: #173F34; color: #F8F6F0; padding: 14px 32px; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; text-decoration: none; font-weight: 600; display: inline-block;">
+          Activate My Account &rarr;
+        </a>
+      </div>
+      <p style="font-size: 12px; color: #68776B; line-height: 1.5;">This secure activation link will expire in 48 hours. If you did not expect this invitation, please disregard this transmission.</p>
+    </div>
+  `;
+  return sendEmailNotification({ to, subject, html, eventType: 'STUDENT_ACTIVATION' });
+}
+
+/**
+ * B. Account Activation Confirmation
+ */
+export async function sendAccountActivationConfirmationEmail({
+  to,
+  name,
+}: {
+  to: string;
+  name: string;
+}) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const loginUrl = `${appUrl}/login`;
+  const subject = `[RBS Yoga Studio] Account Successfully Activated`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #F8F6F0; border: 1px solid #E9EDE5; padding: 32px; color: #1E3029;">
+      <h2 style="font-family: Georgia, serif; color: #173F34;">Welcome to the Sanctuary, ${name}</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Your student account is now fully active. You can now reserve timetable mats, attend online live streams, and stream masterclass recordings.</p>
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="${loginUrl}" style="background-color: #173F34; color: #F8F6F0; padding: 12px 28px; text-decoration: none; text-transform: uppercase; font-size: 12px; font-weight: 600;">
+          Log In to Student Sanctuary &rarr;
+        </a>
+      </div>
+    </div>
+  `;
+  return sendEmailNotification({ to, subject, html, eventType: 'ACTIVATION_CONFIRMED' });
+}
+
+/**
+ * C. Password Reset Email
+ */
+export async function sendPasswordResetEmail({
+  to,
+  name,
+  resetUrl,
+}: {
+  to: string;
+  name: string;
+  resetUrl: string;
+}) {
+  const subject = `[RBS Yoga Studio] Password Reset Request`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #F8F6F0; border: 1px solid #E9EDE5; padding: 32px; color: #1E3029;">
+      <h2 style="font-family: Georgia, serif; color: #173F34;">Password Reset Request</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Namaste <strong>${name}</strong>, we received a request to reset your password. Click the link below to set a new password:</p>
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="${resetUrl}" style="background-color: #173F34; color: #F8F6F0; padding: 12px 28px; text-decoration: none; text-transform: uppercase; font-size: 12px; font-weight: 600;">
+          Reset Password &rarr;
+        </a>
+      </div>
+      <p style="font-size: 12px; color: #68776B;">This link is valid for 60 minutes. If you did not request this, you can safely ignore this email.</p>
+    </div>
+  `;
+  return sendEmailNotification({ to, subject, html, eventType: 'PASSWORD_RESET' });
+}
+
+/**
+ * D. Subscription Confirmation Email
+ */
+export async function sendSubscriptionConfirmationEmail({
+  to,
+  name,
+  planName,
+  durationDays,
+  amount,
+  validUntil,
+}: {
+  to: string;
+  name: string;
+  planName: string;
+  durationDays: number;
+  amount: number;
+  validUntil?: string;
+}) {
+  const subject = `[RBS Yoga Studio] Subscription Confirmed: ${planName}`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #F8F6F0; border: 1px solid #E9EDE5; padding: 32px; color: #1E3029;">
+      <h2 style="font-family: Georgia, serif; color: #173F34;">Subscription Confirmed</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Namaste <strong>${name}</strong>, your pass for <strong>${planName}</strong> has been successfully confirmed.</p>
+      <div style="background: #ffffff; border: 1px solid #E9EDE5; padding: 16px; margin: 18px 0;">
+        <p style="margin: 6px 0; font-size: 13px;"><strong>Plan:</strong> ${planName} (${durationDays} Days)</p>
+        <p style="margin: 6px 0; font-size: 13px;"><strong>Investment:</strong> ₹${amount.toLocaleString('en-IN')}</p>
+        ${validUntil ? `<p style="margin: 6px 0; font-size: 13px;"><strong>Valid Until:</strong> ${validUntil}</p>` : ''}
+      </div>
+    </div>
+  `;
+  return sendEmailNotification({ to, subject, html, eventType: 'SUBSCRIPTION_CONFIRMED' });
+}
+
+/**
+ * E. Subscription Expiry Reminder
+ */
+export async function sendSubscriptionExpiryReminderEmail({
+  to,
+  name,
+  planName,
+  daysRemaining,
+  expiryDate,
+}: {
+  to: string;
+  name: string;
+  planName: string;
+  daysRemaining: number;
+  expiryDate: string;
+}) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const renewUrl = `${appUrl}/memberships`;
+  const subject = `[RBS Yoga Studio] Your Membership Expires in ${daysRemaining} Days`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #F8F6F0; border: 1px solid #E9EDE5; padding: 32px; color: #1E3029;">
+      <h2 style="font-family: Georgia, serif; color: #173F34;">Renew Your Sadhana Pass</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Namaste <strong>${name}</strong>, your active subscription for <strong>${planName}</strong> is scheduled to conclude on <strong>${expiryDate}</strong> (${daysRemaining} days remaining).</p>
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="${renewUrl}" style="background-color: #B69B73; color: #173F34; padding: 12px 28px; text-decoration: none; text-transform: uppercase; font-size: 12px; font-weight: 700;">
+          Renew Membership Pass &rarr;
+        </a>
+      </div>
+    </div>
+  `;
+  return sendEmailNotification({ to, subject, html, eventType: 'SUBSCRIPTION_EXPIRY_REMINDER' });
+}
+
+/**
+ * F & G. Live Class Reminder (60m / 30m)
+ */
+export async function sendLiveClassReminderEmail({
+  to,
+  name,
+  sessionTitle,
+  startTime,
+  meetingUrl,
+  reminderMinutes,
+}: {
+  to: string;
+  name: string;
+  sessionTitle: string;
+  startTime: string;
+  meetingUrl: string;
+  reminderMinutes: number;
+}) {
+  const subject = `[Reminder] Live Yoga Session starts in ${reminderMinutes} minutes: ${sessionTitle}`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #F8F6F0; border: 1px solid #E9EDE5; padding: 32px; color: #1E3029;">
+      <h2 style="font-family: Georgia, serif; color: #173F34;">Live Broadcast Starting Soon</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Namaste <strong>${name}</strong>, your live transmission for <strong>${sessionTitle}</strong> begins in <strong>${reminderMinutes} minutes</strong> (at ${startTime}).</p>
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="${meetingUrl}" style="background-color: #173F34; color: #F8F6F0; padding: 14px 32px; text-decoration: none; text-transform: uppercase; font-size: 12px; font-weight: 600; display: inline-block;">
+          Join Live Broadcast &rarr;
+        </a>
+      </div>
+      <p style="font-size: 12px; color: #68776B;">Please prepare your mat, hydration, and mindful breathing environment.</p>
+    </div>
+  `;
+  return sendEmailNotification({ to, subject, html, eventType: `LIVE_REMINDER_${reminderMinutes}M` });
+}
+
+/**
+ * H. Class Cancellation Email
+ */
+export async function sendClassCancellationEmail({
+  to,
+  name,
+  classTitle,
+  scheduledTime,
+  reason,
+}: {
+  to: string;
+  name: string;
+  classTitle: string;
+  scheduledTime: string;
+  reason?: string;
+}) {
+  const subject = `[Important] Session Cancellation Notice: ${classTitle}`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #F8F6F0; border: 1px solid #E9EDE5; padding: 32px; color: #1E3029;">
+      <h2 style="font-family: Georgia, serif; color: #8C2D19;">Session Cancellation Notice</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Namaste <strong>${name}</strong>, please note that the scheduled session for <strong>${classTitle}</strong> at <strong>${scheduledTime}</strong> has been cancelled.</p>
+      ${reason ? `<p style="font-size: 13px; color: #68776B;">Reason: ${reason}</p>` : ''}
+      <p style="font-size: 13px;">Your booking credits remain preserved. You may book another class anytime from the schedule timetable.</p>
+    </div>
+  `;
+  return sendEmailNotification({ to, subject, html, eventType: 'CLASS_CANCELLED' });
+}
+
+/**
+ * I. Class Rescheduled Email
+ */
+export async function sendClassRescheduledEmail({
+  to,
+  name,
+  classTitle,
+  oldTime,
+  newTime,
+}: {
+  to: string;
+  name: string;
+  classTitle: string;
+  oldTime: string;
+  newTime: string;
+}) {
+  const subject = `[Notice] Class Rescheduled: ${classTitle}`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #F8F6F0; border: 1px solid #E9EDE5; padding: 32px; color: #1E3029;">
+      <h2 style="font-family: Georgia, serif; color: #173F34;">Session Timing Update</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Namaste <strong>${name}</strong>, the timing for <strong>${classTitle}</strong> has been updated.</p>
+      <div style="background: #ffffff; border: 1px solid #E9EDE5; padding: 16px; margin: 18px 0;">
+        <p style="margin: 4px 0; font-size: 13px; color: #8C2D19;"><strong>Previous Time:</strong> ${oldTime}</p>
+        <p style="margin: 4px 0; font-size: 13px; color: #173F34;"><strong>New Rescheduled Time:</strong> ${newTime}</p>
+      </div>
+    </div>
+  `;
+  return sendEmailNotification({ to, subject, html, eventType: 'CLASS_RESCHEDULED' });
+}
+
+/**
+ * J. Payment Confirmation Email
+ */
+export async function sendPaymentConfirmationEmail({
+  to,
+  name,
+  amount,
+  orderId,
+  paymentId,
+  receiptNumber,
+}: {
+  to: string;
+  name: string;
+  amount: number;
+  orderId: string;
+  paymentId?: string;
+  receiptNumber?: string;
+}) {
+  const subject = `[RBS Yoga Studio] Payment Receipt: ₹${amount.toLocaleString('en-IN')}`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #F8F6F0; border: 1px solid #E9EDE5; padding: 32px; color: #1E3029;">
+      <h2 style="font-family: Georgia, serif; color: #173F34;">Official Payment Receipt</h2>
+      <p style="font-size: 14px; line-height: 1.6;">Namaste <strong>${name}</strong>, thank you for your payment. Your transaction has been recorded.</p>
+      <div style="background: #ffffff; border: 1px solid #E9EDE5; padding: 16px; margin: 18px 0;">
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Amount Paid:</strong> ₹${amount.toLocaleString('en-IN')}</p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Order ID:</strong> ${orderId}</p>
+        ${paymentId ? `<p style="margin: 4px 0; font-size: 13px;"><strong>Payment ID:</strong> ${paymentId}</p>` : ''}
+        ${receiptNumber ? `<p style="margin: 4px 0; font-size: 13px;"><strong>Receipt #:</strong> ${receiptNumber}</p>` : ''}
+      </div>
+    </div>
+  `;
+  return sendEmailNotification({ to, subject, html, eventType: 'PAYMENT_RECEIPT' });
+}
+

@@ -3,9 +3,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Script from 'next/script';
 import { Clock, Calendar as CalendarIcon, MapPin, Video, CheckCircle2, ShieldCheck, AlertCircle, ArrowRight, Lock } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 export default function BookSchedulePage() {
   const params = useParams();
@@ -152,33 +159,80 @@ export default function BookSchedulePage() {
 
       const { booking, order } = createData;
 
-      // Step B: Razorpay Simulation / Signature Verification
-      // In sandbox/test environment, simulate payment capture & signature
-      const mockPaymentId = `pay_mock_${Date.now()}`;
-      const mockSignature = 'test_verified';
-
-      // Step C: Confirm payment on server-side
-      const confirmRes = await fetch('/api/bookings/confirm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bookingId: booking.id,
-          orderId: order.orderId,
-          paymentId: mockPaymentId,
-          signature: mockSignature,
-        }),
-      });
-
-      const confirmData = await confirmRes.json();
-      if (confirmRes.ok && confirmData.success) {
-        setConfirmedBooking({
-          bookingNumber: confirmData.bookingNumber,
-          bookingId: confirmData.bookingId,
-          schedule: scheduleData,
-          amount: booking.amount,
+      const confirmBookingOnServer = async (paymentId: string, signature: string) => {
+        const confirmRes = await fetch('/api/bookings/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bookingId: booking.id,
+            orderId: order.orderId,
+            paymentId,
+            signature,
+          }),
         });
+
+        const confirmData = await confirmRes.json();
+        if (confirmRes.ok && confirmData.success) {
+          setConfirmedBooking({
+            bookingNumber: confirmData.bookingNumber,
+            bookingId: confirmData.bookingId,
+            schedule: scheduleData,
+            amount: booking.amount,
+          });
+        } else {
+          throw new Error(confirmData.message || 'Failed to verify payment confirmation');
+        }
+      };
+
+      // Launch Razorpay Checkout Modal if SDK is loaded
+      if (typeof window !== 'undefined' && window.Razorpay) {
+        const options = {
+          key: order.keyId,
+          amount: order.amount,
+          currency: order.currency || 'INR',
+          name: 'RBS Yoga Studio',
+          description: `Class Booking: ${scheduleData?.class?.title || 'Yoga Session'}`,
+          image: '/favicon.ico',
+          order_id: order.orderId.startsWith('order_') && !order.orderId.includes('BK-') ? order.orderId : undefined,
+          prefill: {
+            name: userSession?.name || '',
+            email: userSession?.email || '',
+          },
+          theme: {
+            color: '#173F34',
+          },
+          handler: async function (response: any) {
+            try {
+              setBookingLoading(true);
+              await confirmBookingOnServer(
+                response.razorpay_payment_id || `pay_rzp_${Date.now()}`,
+                response.razorpay_signature || 'test_verified'
+              );
+            } catch (err: any) {
+              setErrorMsg(err.message || 'Payment confirmation failed');
+            } finally {
+              setBookingLoading(false);
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              setBookingLoading(false);
+            },
+          },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (resp: any) {
+          setErrorMsg(resp?.error?.description || 'Payment failed or was cancelled');
+          setBookingLoading(false);
+        });
+
+        rzp.open();
       } else {
-        throw new Error(confirmData.message || 'Failed to verify payment confirmation');
+        // Fallback simulation
+        const mockPaymentId = `pay_mock_${Date.now()}`;
+        const mockSignature = 'test_verified';
+        await confirmBookingOnServer(mockPaymentId, mockSignature);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred during payment processing');
@@ -189,6 +243,10 @@ export default function BookSchedulePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-ivory">
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        strategy="lazyOnload"
+      />
       <Navbar />
 
       <main className="flex-grow pt-32 pb-24 px-6 sm:px-8">

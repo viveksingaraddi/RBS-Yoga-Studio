@@ -14,7 +14,7 @@ export default async function PortalLayout({
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-sage-light">
-      <PortalNav user={{ name: session.name, email: session.email }} />
+      <PortalNav user={{ name: session.name, email: session.email, role: session.role }} />
       <main className="flex-1 p-6 sm:p-10 overflow-y-auto">
         <div className="max-w-6xl mx-auto">{children}</div>
       </main>
