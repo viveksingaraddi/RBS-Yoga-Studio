@@ -9,50 +9,89 @@ export default async function PortalDashboardPage() {
 
   const now = new Date();
 
-  // 1. Fetch active membership
-  const membership = await prisma.membership.findFirst({
-    where: {
-      userId: session.userId,
-      status: 'ACTIVE',
-      OR: [{ endDate: null }, { endDate: { gte: now } }],
-    },
-    include: { plan: true },
-  });
+  // Fetch all learner dashboard components concurrently in parallel with specific column selection
+  const [membership, upcomingBookings, recordings, liveSessions] = await Promise.all([
+    // 1. Fetch active membership
+    prisma.membership.findFirst({
+      where: {
+        userId: session.userId,
+        status: 'ACTIVE',
+        OR: [{ endDate: null }, { endDate: { gte: now } }],
+      },
+      select: {
+        id: true,
+        status: true,
+        startDate: true,
+        endDate: true,
+        plan: {
+          select: {
+            name: true,
+            durationDays: true,
+            includesRecordings: true,
+            includesLiveClasses: true,
+          },
+        },
+      },
+    }),
 
-  // 2. Fetch upcoming confirmed bookings
-  const upcomingBookings = await prisma.booking.findMany({
-    where: {
-      userId: session.userId,
-      status: 'CONFIRMED',
-      schedule: {
+    // 2. Fetch upcoming confirmed bookings
+    prisma.booking.findMany({
+      where: {
+        userId: session.userId,
+        status: 'CONFIRMED',
+        schedule: {
+          startTime: { gte: now },
+        },
+      },
+      select: {
+        id: true,
+        bookingNumber: true,
+        schedule: {
+          select: {
+            id: true,
+            startTime: true,
+            endTime: true,
+            deliveryType: true,
+            location: true,
+            meetingUrl: true,
+            class: { select: { title: true } },
+          },
+        },
+      },
+      orderBy: { schedule: { startTime: 'asc' } },
+      take: 3,
+    }),
+
+    // 3. Fetch recent recordings
+    prisma.recording.findMany({
+      where: { isPublished: true },
+      select: {
+        id: true,
+        title: true,
+        durationSeconds: true,
+        category: true,
+        thumbnailUrl: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 3,
+    }),
+
+    // 4. Fetch upcoming live sessions
+    prisma.liveSession.findMany({
+      where: {
+        status: 'SCHEDULED',
         startTime: { gte: now },
       },
-    },
-    include: {
-      schedule: {
-        include: { class: true },
+      select: {
+        id: true,
+        title: true,
+        startTime: true,
+        streamUrl: true,
       },
-    },
-    orderBy: { schedule: { startTime: 'asc' } },
-    take: 3,
-  });
-
-  // 3. Fetch recent recordings
-  const recordings = await prisma.recording.findMany({
-    where: { isPublished: true },
-    orderBy: { createdAt: 'desc' },
-    take: 3,
-  });
-
-  // 4. Fetch upcoming live sessions
-  const liveSessions = await prisma.liveSession.findMany({
-    where: {
-      status: 'SCHEDULED',
-      startTime: { gte: now },
-    },
-    orderBy: { startTime: 'asc' },
-    take: 2,
-  });
+      orderBy: { startTime: 'asc' },
+      take: 2,
+    }),
+  ]);
 
   const daysRemaining = membership?.endDate
     ? Math.max(0, Math.ceil((membership.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
@@ -242,6 +281,26 @@ export default async function PortalDashboardPage() {
             </Link>
           ))}
         </div>
+      </div>
+
+      {/* Account Security & Password Card */}
+      <div className="bg-sage-light border border-sage-dark/40 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center space-x-2 text-forest font-serif text-lg font-medium">
+            <ShieldCheck className="w-5 h-5 text-earth" />
+            <span>Account Security &amp; Login Password</span>
+          </div>
+          <p className="text-xs text-charcoal/70">
+            Keep your account secure. You can update your initial login password at any time.
+          </p>
+        </div>
+        <Link
+          href="/portal/settings"
+          className="bg-forest text-ivory px-5 py-2.5 text-xs uppercase tracking-wider font-semibold hover:bg-forest-light transition-all flex items-center space-x-1.5 shrink-0"
+        >
+          <span>Update Password</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
       </div>
     </div>
   );

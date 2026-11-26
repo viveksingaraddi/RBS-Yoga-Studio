@@ -51,25 +51,25 @@ export default function GallerySection({ businessName = 'RBS Studio' }: { busine
     const ctx = gsap.context(() => {
       gsap.from('.gallery-header', {
         opacity: 0,
-        y: 35,
-        duration: 0.9,
+        y: 25,
+        duration: 0.8,
         ease: 'power3.out',
         scrollTrigger: {
-          trigger: '.gallery-header',
+          trigger: sectionRef.current,
           start: 'top 85%',
         },
       });
 
       gsap.from('.gallery-card', {
         opacity: 0,
-        scale: 0.94,
-        y: 30,
-        duration: 0.8,
-        stagger: 0.1,
+        scale: 0.96,
+        y: 25,
+        duration: 0.75,
+        stagger: 0.08,
         ease: 'power2.out',
         scrollTrigger: {
-          trigger: '.gallery-grid',
-          start: 'top 80%',
+          trigger: sectionRef.current,
+          start: 'top 75%',
         },
       });
     }, sectionRef);
@@ -78,9 +78,9 @@ export default function GallerySection({ businessName = 'RBS Studio' }: { busine
   }, []);
 
   return (
-    <section ref={sectionRef} id="gallery" className="py-24 sm:py-32 bg-ivory border-t border-sage-dark/30 overflow-hidden">
+    <section ref={sectionRef} id="gallery" className="py-14 sm:py-20 bg-ivory border-t border-sage-dark/30 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 sm:px-8">
-        <div className="gallery-header text-center max-w-3xl mx-auto space-y-3 mb-16">
+        <div className="gallery-header text-center max-w-3xl mx-auto space-y-3 mb-10 sm:mb-12">
           <span className="text-xs uppercase tracking-[0.25em] text-earth font-semibold">
             Visual Harmony
           </span>

@@ -65,11 +65,11 @@ export default function PhilosophySection({ businessName = 'RBS Yoga Studio' }: 
       // Header entrance
       gsap.from('.philosophy-header', {
         opacity: 0,
-        y: 35,
-        duration: 0.9,
+        y: 25,
+        duration: 0.8,
         ease: 'power3.out',
         scrollTrigger: {
-          trigger: '.philosophy-header',
+          trigger: sectionRef.current,
           start: 'top 85%',
         },
       });
@@ -77,13 +77,13 @@ export default function PhilosophySection({ businessName = 'RBS Yoga Studio' }: 
       // Sequential staggered appearance of the 6 philosophy cards
       gsap.from('.philosophy-card', {
         opacity: 0,
-        y: 45,
-        duration: 0.85,
-        stagger: 0.12,
+        y: 35,
+        duration: 0.75,
+        stagger: 0.1,
         ease: 'power3.out',
         scrollTrigger: {
-          trigger: '.philosophy-grid',
-          start: 'top 80%',
+          trigger: sectionRef.current,
+          start: 'top 75%',
         },
       });
     }, sectionRef);
@@ -95,11 +95,11 @@ export default function PhilosophySection({ businessName = 'RBS Yoga Studio' }: 
     <section
       ref={sectionRef}
       id="philosophy"
-      className="py-24 sm:py-32 bg-sage-light border-y border-sage-dark/40 relative overflow-hidden"
+      className="py-14 sm:py-20 bg-sage-light border-y border-sage-dark/40 relative overflow-hidden"
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-8">
         {/* Section Header */}
-        <div className="philosophy-header text-center max-w-3xl mx-auto space-y-4 mb-20">
+        <div className="philosophy-header text-center max-w-3xl mx-auto space-y-3 mb-10 sm:mb-12">
           <span className="text-xs uppercase tracking-[0.25em] text-earth font-semibold">
             The Studio Philosophy
           </span>

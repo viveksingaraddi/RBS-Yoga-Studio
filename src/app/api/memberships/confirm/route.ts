@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { verifyRazorpaySignature } from '@/lib/razorpay';
-import { sendEmailNotification } from '@/lib/email';
+import { sendEmailNotification, sendUserCredentialsEmail } from '@/lib/email';
 import { logAuditEvent } from '@/lib/audit';
 
 export async function POST(req: Request) {
@@ -76,26 +76,15 @@ export async function POST(req: Request) {
       });
     });
 
-    // Send confirmation email
-    sendEmailNotification({
+    // Send confirmation and credentials access email from yogawithsangu@gmail.com
+    sendUserCredentialsEmail({
       to: membership.user.email,
-      subject: `[Membership Activated] Welcome to ${membership.plan.name} - RBS Yoga Studio`,
-      html: `
-        <div style="font-family: serif; color: #1E3029; max-width: 600px; padding: 24px; border: 1px solid #E9EDE5;">
-          <h2 style="color: #173F34;">Welcome to RBS Yoga Studio Membership</h2>
-          <p>Namaste <strong>${membership.user.name}</strong>,</p>
-          <p>Your <strong>${membership.plan.name}</strong> is now officially active!</p>
-          <hr style="border: 0; border-top: 1px solid #E9EDE5; margin: 16px 0;" />
-          <p><strong>Plan:</strong> ${membership.plan.name}</p>
-          <p><strong>Duration:</strong> ${membership.plan.durationDays} Days</p>
-          <p><strong>Valid Until:</strong> ${endDate.toLocaleDateString('en-IN', { dateStyle: 'full' })}</p>
-          <p><strong>Privileges:</strong> Unlimited Library Access & Live Sessions</p>
-          <hr style="border: 0; border-top: 1px solid #E9EDE5; margin: 16px 0;" />
-          <p style="font-size: 13px; color: #68776B;">You can now access your learner portal to stream on-demand video sessions and reserve upcoming classes.</p>
-        </div>
-      `,
-      eventType: 'MEMBERSHIP_ACTIVATED',
-    });
+      name: membership.user.name,
+      role: 'LEARNER',
+      isNewUser: false,
+      membershipPlanName: membership.plan.name,
+      validUntil: endDate.toLocaleDateString('en-IN', { dateStyle: 'full' }),
+    }).catch((err) => console.error('Failed to send membership activation credentials email:', err));
 
     await logAuditEvent({
       userId: user.userId,

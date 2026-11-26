@@ -21,22 +21,22 @@ export default function WellbeingSection() {
     const ctx = gsap.context(() => {
       gsap.from('.wellbeing-text-block', {
         opacity: 0,
-        y: 40,
-        duration: 1,
+        y: 30,
+        duration: 0.85,
         ease: 'power3.out',
         scrollTrigger: {
-          trigger: '.wellbeing-text-block',
+          trigger: sectionRef.current,
           start: 'top 80%',
         },
       });
 
       gsap.from('.wellbeing-image-frame', {
         opacity: 0,
-        scale: 0.95,
-        duration: 1.1,
+        scale: 0.96,
+        duration: 0.9,
         ease: 'power3.out',
         scrollTrigger: {
-          trigger: '.wellbeing-image-frame',
+          trigger: sectionRef.current,
           start: 'top 80%',
         },
       });
@@ -49,7 +49,7 @@ export default function WellbeingSection() {
     <section
       ref={sectionRef}
       id="wellbeing"
-      className="py-24 sm:py-32 bg-forest text-ivory relative overflow-hidden"
+      className="py-14 sm:py-20 bg-forest text-ivory relative overflow-hidden"
     >
       {/* Decorative ambient background accents */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-forest-light/40 rounded-full blur-3xl pointer-events-none" />

@@ -32,8 +32,8 @@ const DEFAULT_SETTINGS: StudioBusinessSettings = {
     'Master Sangu holds an M.Sc. in Yoga with over 10 years of international teaching experience, including extensive work in Vietnam. Dedicated to authentic yogic discipline, Master Sangu integrates classical posture alignment, rhythmic pranayama, and profound meditative stillness to help students cultivate enduring physical strength, mental clarity, and holistic balance.',
   publicWhatsAppNumber: '+91 89513 46405',
   publicContactPhone: '+91 89513 46405',
-  publicContactEmail: 'contact@rbsyogastudio.com',
-  adminNotificationEmail: 'owner@rbsyogastudio.com',
+  publicContactEmail: 'yogawithsangu@gmail.com',
+  adminNotificationEmail: 'yogawithsangu@gmail.com',
   businessAddress: 'RBS Studio Pavilion, Bangalore / Global Online Shala (Physical address to be finalized)',
   timezone: 'Asia/Kolkata',
   currency: 'INR',
@@ -51,17 +51,33 @@ export function cleanWhatsAppNumber(phone: string): string {
   return phone.replace(/\D/g, '');
 }
 
+// In-memory cache with 60-second TTL to avoid repeated remote database queries on every render
+let cachedSettings: StudioBusinessSettings | null = null;
+let cacheExpiry: number = 0;
+
+export function invalidateSettingsCache() {
+  cachedSettings = null;
+  cacheExpiry = 0;
+}
+
 export async function getBusinessSettings(): Promise<StudioBusinessSettings> {
+  const now = Date.now();
+  if (cachedSettings && now < cacheExpiry) {
+    return cachedSettings;
+  }
+
   try {
     const settings = await prisma.businessSettings.findUnique({
       where: { id: 'singleton' },
     });
 
     if (!settings) {
+      cachedSettings = DEFAULT_SETTINGS;
+      cacheExpiry = now + 60_000;
       return DEFAULT_SETTINGS;
     }
 
-    return {
+    const resolved: StudioBusinessSettings = {
       id: settings.id,
       businessName: settings.businessName || DEFAULT_SETTINGS.businessName,
       brandTagline: settings.brandTagline || settings.tagline || DEFAULT_SETTINGS.brandTagline,
@@ -83,8 +99,12 @@ export async function getBusinessSettings(): Promise<StudioBusinessSettings> {
       notifyOnPayment: settings.notifyOnPayment ?? true,
       notifyOnMembership: settings.notifyOnMembership ?? true,
     };
+
+    cachedSettings = resolved;
+    cacheExpiry = now + 60_000;
+    return resolved;
   } catch (error) {
     console.error('Error fetching business settings, using defaults:', error);
-    return DEFAULT_SETTINGS;
+    return cachedSettings || DEFAULT_SETTINGS;
   }
 }

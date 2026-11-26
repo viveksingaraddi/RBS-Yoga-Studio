@@ -13,11 +13,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [requiresSubscription, setRequiresSubscription] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
+    setRequiresSubscription(false);
 
     try {
       const res = await fetch('/api/auth/login', {
@@ -33,6 +35,9 @@ export default function LoginPage() {
         router.refresh();
       } else {
         setErrorMsg(data.message || 'Login failed. Please verify credentials.');
+        if (data.requiresSubscription) {
+          setRequiresSubscription(true);
+        }
       }
     } catch {
       setErrorMsg('An unexpected network error occurred.');
@@ -60,9 +65,22 @@ export default function LoginPage() {
           </div>
 
           {errorMsg && (
-            <div className="mb-6 p-3 bg-red-50 text-red-800 text-xs border border-red-200 flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorMsg}</span>
+            <div className="mb-6 p-4 bg-amber-50 text-amber-900 text-xs border border-amber-200 space-y-2">
+              <div className="flex items-start space-x-2">
+                <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <span>{errorMsg}</span>
+              </div>
+              {requiresSubscription && (
+                <div className="pt-2 border-t border-amber-200">
+                  <Link
+                    href="/memberships"
+                    className="inline-flex items-center space-x-1.5 text-forest font-semibold underline hover:text-forest-light"
+                  >
+                    <span>Explore Studio Membership Plans & Passes</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 
@@ -113,20 +131,18 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Seed demo credential helper */}
+          {/* Account helpers */}
           <div className="mt-8 pt-6 border-t border-sage-dark/40 text-center space-y-3">
             <p className="text-xs text-charcoal/70">
-              Don't have an account yet?{' '}
+              Don't have an active pass?{' '}
+              <Link href="/memberships" className="text-forest font-semibold underline">
+                Browse Memberships
+              </Link>
+              {' · '}
               <Link href="/register" className="text-forest font-semibold underline">
-                Create Learner Account
+                Create Account
               </Link>
             </p>
-
-            <div className="p-3 bg-sage text-[11px] text-charcoal/80 text-left space-y-1 border border-sage-dark/50">
-              <span className="font-semibold block text-forest">Development Access:</span>
-              <div>Admin: <code>admin@rbsyogastudio.com</code> / <code>Admin@RBSYoga2026!</code></div>
-              <div>Learner: <code>learner@rbsyogastudio.com</code> / <code>Learner@RBSYoga2026!</code></div>
-            </div>
           </div>
         </div>
       </main>

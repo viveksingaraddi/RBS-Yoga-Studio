@@ -40,13 +40,15 @@ export default async function SchedulePage() {
           {/* Header */}
           <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
             <span className="text-xs uppercase tracking-[0.25em] text-earth font-semibold">
-              Shala Timetable & Sittings
+              Shala Timetable (Monday to Friday · 5 Days a Week)
             </span>
             <h1 className="font-serif text-4xl sm:text-6xl font-normal text-forest leading-tight">
-              Class Schedule
+              Class Batches & Timetable
             </h1>
             <div className="w-16 h-[2px] bg-earth mx-auto my-3" />
             <p className="text-sm sm:text-base text-charcoal/80 leading-relaxed font-normal">
+              Regular Morning Batches (<strong>6:00 AM – 7:00 AM</strong> & <strong>7:15 AM – 8:15 AM</strong>) and 
+              Evening Batches (<strong>6:00 PM – 7:00 PM</strong> & <strong>7:15 PM – 8:15 PM</strong>).
               Book your spot in advance to ensure dedicated individual attention.
               Sessions are capped to preserve optimal instructor guidance by Master Sangu.
             </p>

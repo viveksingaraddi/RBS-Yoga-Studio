@@ -41,24 +41,24 @@ export default function TimetableSection({ schedules }: { schedules: ScheduleIte
     const ctx = gsap.context(() => {
       gsap.from('.timetable-header', {
         opacity: 0,
-        y: 35,
-        duration: 0.9,
+        y: 25,
+        duration: 0.8,
         ease: 'power3.out',
         scrollTrigger: {
-          trigger: '.timetable-header',
+          trigger: sectionRef.current,
           start: 'top 85%',
         },
       });
 
       gsap.from('.timetable-row', {
         opacity: 0,
-        y: 25,
-        duration: 0.7,
-        stagger: 0.08,
+        y: 20,
+        duration: 0.6,
+        stagger: 0.06,
         ease: 'power2.out',
         scrollTrigger: {
-          trigger: '.timetable-list',
-          start: 'top 80%',
+          trigger: sectionRef.current,
+          start: 'top 75%',
         },
       });
     }, sectionRef);
@@ -67,20 +67,21 @@ export default function TimetableSection({ schedules }: { schedules: ScheduleIte
   }, [filtered.length]);
 
   return (
-    <section ref={sectionRef} id="schedule" className="py-24 sm:py-32 bg-ivory border-t border-sage-dark/30 overflow-hidden">
+    <section ref={sectionRef} id="schedule" className="py-14 sm:py-20 bg-ivory border-t border-sage-dark/30 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 sm:px-8">
         {/* Section Header */}
-        <div className="timetable-header flex flex-col md:flex-row md:items-end justify-between mb-12">
+        <div className="timetable-header flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-10">
           <div className="space-y-3">
             <span className="text-xs uppercase tracking-[0.25em] text-earth font-semibold">
-              Live Studio & Online Timetable
+              Live Studio & Online Batches (Monday to Friday · 5 Days a Week)
             </span>
             <h2 className="font-serif text-3xl sm:text-5xl font-normal text-forest leading-tight">
-              Join an Upcoming Practice
+              Join a Daily Practice Batch
             </h2>
             <p className="text-sm text-charcoal/80 max-w-xl font-normal">
-              Authentic schedules connected directly to real shala capacity. Reserve your slot
-              or attend interactively from your home.
+              Morning Batches: <strong>6:00 AM – 7:00 AM</strong> & <strong>7:15 AM – 8:15 AM</strong>.
+              <br />
+              Evening Batches: <strong>6:00 PM – 7:00 PM</strong> & <strong>7:15 PM – 8:15 PM</strong>.
             </p>
           </div>
 

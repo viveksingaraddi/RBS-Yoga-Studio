@@ -33,6 +33,51 @@ export async function POST(req: Request) {
       );
     }
 
+    // Configured primary role accounts that are always permitted
+    const CONFIG_SYSTEM_EMAILS = [
+      'admin@rbsyogastudio.com',
+      'instructor@rbsyogastudio.com',
+      'learner@rbsyogastudio.com',
+      'yogawithsangu@gmail.com',
+    ];
+
+    const isConfiguredUser = CONFIG_SYSTEM_EMAILS.includes(user.email.toLowerCase());
+
+    // Access control:
+    // ADMIN and INSTRUCTOR can always log in.
+    // Pre-configured role accounts are always permitted.
+    // All other users must have an appropriate active membership or confirmed subscription booking.
+    if (user.role !== 'ADMIN' && user.role !== 'INSTRUCTOR' && !isConfiguredUser) {
+      const now = new Date();
+      const activeMembership = await prisma.membership.findFirst({
+        where: {
+          userId: user.id,
+          status: 'ACTIVE',
+          OR: [{ endDate: null }, { endDate: { gte: now } }],
+        },
+      });
+
+      const activeBooking = await prisma.booking.findFirst({
+        where: {
+          userId: user.id,
+          status: 'CONFIRMED',
+        },
+      });
+
+      if (!activeMembership && !activeBooking) {
+        return NextResponse.json(
+          {
+            success: false,
+            requiresSubscription: true,
+            message:
+              'Active membership or subscription required to access the student portal. Please purchase a membership pass to activate your account.',
+            redirectUrl: '/memberships',
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     const token = signToken({
       userId: user.id,
       email: user.email,

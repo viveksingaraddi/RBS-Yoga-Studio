@@ -37,24 +37,24 @@ export default function ProgramsSection({
     const ctx = gsap.context(() => {
       gsap.from('.programs-header', {
         opacity: 0,
-        y: 35,
-        duration: 0.9,
+        y: 25,
+        duration: 0.8,
         ease: 'power3.out',
         scrollTrigger: {
-          trigger: '.programs-header',
+          trigger: sectionRef.current,
           start: 'top 85%',
         },
       });
 
       gsap.from('.program-card', {
         opacity: 0,
-        y: 40,
-        duration: 0.8,
-        stagger: 0.12,
+        y: 30,
+        duration: 0.75,
+        stagger: 0.1,
         ease: 'power3.out',
         scrollTrigger: {
-          trigger: '.programs-grid',
-          start: 'top 80%',
+          trigger: sectionRef.current,
+          start: 'top 75%',
         },
       });
     }, sectionRef);
@@ -63,10 +63,10 @@ export default function ProgramsSection({
   }, []);
 
   return (
-    <section ref={sectionRef} id="programs" className="py-24 sm:py-32 bg-ivory-pure border-t border-sage-dark/30 overflow-hidden">
+    <section ref={sectionRef} id="programs" className="py-14 sm:py-20 bg-ivory-pure border-t border-sage-dark/30 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 sm:px-8">
         {/* Section Header */}
-        <div className="programs-header flex flex-col md:flex-row md:items-end justify-between mb-16">
+        <div className="programs-header flex flex-col md:flex-row md:items-end justify-between mb-10 sm:mb-12">
           <div className="space-y-3 max-w-2xl">
             <span className="text-xs uppercase tracking-[0.25em] text-earth font-semibold">
               Holistic Offerings

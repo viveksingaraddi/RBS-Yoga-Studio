@@ -114,7 +114,7 @@ export default function HeroSection({
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[92vh] flex items-center justify-center pt-28 pb-16 overflow-hidden bg-ivory"
+      className="relative min-h-[82vh] lg:min-h-[85vh] flex items-center justify-center pt-24 pb-12 sm:pt-28 sm:pb-16 overflow-hidden bg-ivory"
     >
       {/* Background Subtle Gradient & Decorative Texture */}
       <div className="absolute inset-0 bg-radial-gradient from-sage-light/60 via-ivory to-ivory opacity-80 pointer-events-none" />
@@ -198,6 +198,10 @@ export default function HeroSection({
               <img
                 src="https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&q=80&w=1200"
                 alt="Classical Yoga Asana Practice at RBS Yoga Studio"
+                fetchPriority="high"
+                decoding="async"
+                width={600}
+                height={800}
                 className="w-full h-full object-cover object-center filter saturate-[0.9] hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-forest/75 via-transparent to-transparent pointer-events-none" />

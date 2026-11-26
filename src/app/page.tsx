@@ -14,51 +14,67 @@ import MembershipsSection from '@/components/home/MembershipsSection';
 import GallerySection from '@/components/home/GallerySection';
 import ContactSection from '@/components/home/ContactSection';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60; // Cache homepage data for 60 seconds with on-demand ISR revalidation
 
 export default async function HomePage() {
-  // 1. Fetch dynamic business & branding settings
-  const settings = await getBusinessSettings();
+  const now = new Date();
 
-  // 2. Fetch real programs
-  let programs: Prisma.ProgramGetPayload<Record<string, never>>[] = [];
-  try {
-    programs = await prisma.program.findMany({
+  // Fetch all primary landing page data concurrently in a single round-trip
+  const [settings, programs, schedules, plans] = await Promise.all([
+    getBusinessSettings(),
+    prisma.program.findMany({
       where: { isPublished: true },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        shortDesc: true,
+        imageUrl: true,
+        deliveryType: true,
+        duration: true,
+        price: true,
+      },
       orderBy: { sortOrder: 'asc' },
-    });
-  } catch (error) {
-    console.error('Error fetching programs:', error);
-  }
-
-  // 3. Fetch upcoming schedules
-  let schedules: Prisma.ClassScheduleGetPayload<{ include: { class: true } }>[] = [];
-  try {
-    schedules = await prisma.classSchedule.findMany({
+    }),
+    prisma.classSchedule.findMany({
       where: {
         isCancelled: false,
-        startTime: { gte: new Date() },
+        startTime: { gte: now },
       },
-      include: {
-        class: true,
+      select: {
+        id: true,
+        startTime: true,
+        endTime: true,
+        capacity: true,
+        bookedCount: true,
+        deliveryType: true,
+        location: true,
+        class: {
+          select: {
+            title: true,
+            price: true,
+            instructor: true,
+          },
+        },
       },
       orderBy: { startTime: 'asc' },
       take: 8,
-    });
-  } catch (error) {
-    console.error('Error fetching schedules:', error);
-  }
-
-  // 4. Fetch membership plans
-  let plans: Prisma.MembershipPlanGetPayload<Record<string, never>>[] = [];
-  try {
-    plans = await prisma.membershipPlan.findMany({
+    }),
+    prisma.membershipPlan.findMany({
       where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        durationDays: true,
+        price: true,
+        benefits: true,
+        sortOrder: true,
+      },
       orderBy: { sortOrder: 'asc' },
-    });
-  } catch (error) {
-    console.error('Error fetching membership plans:', error);
-  }
+    }),
+  ]);
 
   // Serialized data for client components
   const serializedPrograms = programs.map((p) => ({

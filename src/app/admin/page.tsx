@@ -18,64 +18,88 @@ export default async function AdminOverviewPage() {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  // 1. Total Learners count
-  const totalLearners = await prisma.user.count({
-    where: { role: 'LEARNER' },
-  });
+  // Execute all dashboard metrics and recent lists concurrently in parallel
+  const [
+    totalLearners,
+    activeMemberships,
+    todayBookingsCount,
+    upcomingClassesCount,
+    totalEnquiries,
+    newEnquiries,
+    revenueAgg,
+    recentEnquiries,
+    recentBookings,
+  ] = await Promise.all([
+    // 1. Total Learners count
+    prisma.user.count({ where: { role: 'LEARNER' } }),
 
-  // 2. Active memberships count
-  const activeMemberships = await prisma.membership.count({
-    where: {
-      status: 'ACTIVE',
-      OR: [{ endDate: null }, { endDate: { gte: now } }],
-    },
-  });
-
-  // 3. Today's bookings count
-  const todayBookingsCount = await prisma.booking.count({
-    where: {
-      createdAt: { gte: startOfToday },
-    },
-  });
-
-  // 4. Upcoming classes count
-  const upcomingClassesCount = await prisma.classSchedule.count({
-    where: {
-      isCancelled: false,
-      startTime: { gte: now },
-    },
-  });
-
-  // 5. Total Enquiries count & NEW enquiries
-  const totalEnquiries = await prisma.enquiry.count();
-  const newEnquiries = await prisma.enquiry.count({
-    where: { status: 'NEW' },
-  });
-
-  // 6. Real revenue calculated from captured payments
-  const revenueAgg = await prisma.payment.aggregate({
-    _sum: { amount: true },
-    where: { status: 'CAPTURED' },
-  });
-  const totalRevenue = Number(revenueAgg._sum.amount || 0);
-
-  // Recent enquiries
-  const recentEnquiries = await prisma.enquiry.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-  });
-
-  // Recent bookings
-  const recentBookings = await prisma.booking.findMany({
-    include: {
-      user: true,
-      schedule: {
-        include: { class: true },
+    // 2. Active memberships count
+    prisma.membership.count({
+      where: {
+        status: 'ACTIVE',
+        OR: [{ endDate: null }, { endDate: { gte: now } }],
       },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-  });
+    }),
+
+    // 3. Today's bookings count
+    prisma.booking.count({
+      where: { createdAt: { gte: startOfToday } },
+    }),
+
+    // 4. Upcoming classes count
+    prisma.classSchedule.count({
+      where: { isCancelled: false, startTime: { gte: now } },
+    }),
+
+    // 5. Total Enquiries count & NEW enquiries
+    prisma.enquiry.count(),
+    prisma.enquiry.count({ where: { status: 'NEW' } }),
+
+    // 6. Real revenue calculated from captured payments
+    prisma.payment.aggregate({
+      _sum: { amount: true },
+      where: { status: 'CAPTURED' },
+    }),
+
+    // 7. Recent enquiries (column projection)
+    prisma.enquiry.findMany({
+      select: {
+        id: true,
+        fullName: true,
+        phone: true,
+        message: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    }),
+
+    // 8. Recent bookings (column projection)
+    prisma.booking.findMany({
+      select: {
+        id: true,
+        bookingNumber: true,
+        status: true,
+        amountPaid: true,
+        createdAt: true,
+        user: {
+          select: { name: true, email: true },
+        },
+        schedule: {
+          select: {
+            startTime: true,
+            deliveryType: true,
+            class: { select: { title: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    }),
+  ]);
+
+  const totalRevenue = Number(revenueAgg._sum.amount || 0);
 
   return (
     <div className="space-y-8">

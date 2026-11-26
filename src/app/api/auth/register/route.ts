@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { hashPassword, signToken, setAuthCookie } from '@/lib/auth';
 import { logAuditEvent } from '@/lib/audit';
+import { sendUserCredentialsEmail } from '@/lib/email';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -38,6 +39,15 @@ export async function POST(req: Request) {
         role: 'LEARNER',
       },
     });
+
+    // Send welcome email with login credentials from yogawithsangu@gmail.com
+    sendUserCredentialsEmail({
+      to: user.email,
+      name: user.name,
+      password: validated.password,
+      role: 'LEARNER',
+      isNewUser: true,
+    }).catch((err) => console.error('Failed to dispatch registration credentials email:', err));
 
     const token = signToken({
       userId: user.id,

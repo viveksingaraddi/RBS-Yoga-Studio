@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Calendar, Award, Video, Film, LogOut, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, Calendar, Award, Video, Film, LogOut, ArrowLeft, KeyRound } from 'lucide-react';
 
 export default function PortalNav({ user }: { user: { name: string; email: string } }) {
   const pathname = usePathname();
@@ -20,6 +20,7 @@ export default function PortalNav({ user }: { user: { name: string; email: strin
     { name: 'My Membership', href: '/portal/membership', icon: Award },
     { name: 'Live Sessions', href: '/portal/live', icon: Video },
     { name: 'Recorded Library', href: '/portal/recordings', icon: Film },
+    { name: 'Security & Password', href: '/portal/settings', icon: KeyRound },
   ];
 
   return (

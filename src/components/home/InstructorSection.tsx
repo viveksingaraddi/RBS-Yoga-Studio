@@ -37,11 +37,11 @@ export default function InstructorSection({
       // Image reveal from left
       gsap.from('.instructor-portrait-card', {
         opacity: 0,
-        x: -45,
-        duration: 1,
+        x: -30,
+        duration: 0.85,
         ease: 'power3.out',
         scrollTrigger: {
-          trigger: '.instructor-portrait-card',
+          trigger: sectionRef.current,
           start: 'top 80%',
         },
       });
@@ -49,11 +49,11 @@ export default function InstructorSection({
       // Text entrance from right
       gsap.from('.instructor-bio-text', {
         opacity: 0,
-        x: 45,
-        duration: 1,
+        x: 30,
+        duration: 0.85,
         ease: 'power3.out',
         scrollTrigger: {
-          trigger: '.instructor-bio-text',
+          trigger: sectionRef.current,
           start: 'top 80%',
         },
       });
@@ -61,13 +61,13 @@ export default function InstructorSection({
       // Sequential credentials checklist
       gsap.from('.instructor-credential', {
         opacity: 0,
-        y: 20,
-        duration: 0.7,
-        stagger: 0.12,
+        y: 15,
+        duration: 0.6,
+        stagger: 0.1,
         ease: 'power2.out',
         scrollTrigger: {
-          trigger: '.instructor-credentials-grid',
-          start: 'top 85%',
+          trigger: sectionRef.current,
+          start: 'top 75%',
         },
       });
     }, sectionRef);
@@ -76,7 +76,7 @@ export default function InstructorSection({
   }, []);
 
   return (
-    <section ref={sectionRef} id="instructor" className="py-24 sm:py-32 bg-ivory relative overflow-hidden">
+    <section ref={sectionRef} id="instructor" className="py-14 sm:py-20 bg-ivory relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 sm:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           {/* Left Column: Portrait and Credentials Card */}

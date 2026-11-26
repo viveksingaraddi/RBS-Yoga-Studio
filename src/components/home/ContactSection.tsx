@@ -68,7 +68,7 @@ export default function ContactSection({
   };
 
   return (
-    <section id="contact" className="py-24 sm:py-32 bg-sage-light border-t border-sage-dark/40 relative">
+    <section id="contact" className="py-14 sm:py-20 bg-sage-light border-t border-sage-dark/40 relative">
       <div className="max-w-7xl mx-auto px-6 sm:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
           {/* Left Column: Direct Info & Editorial */}
